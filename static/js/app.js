@@ -494,8 +494,8 @@ function deleteSel() {
 // ═══════════════════════════════════════════════════════
 
 function applyHL() {
-  const stepsA = eventsToExportSteps(state.voices[state.hlVA]);
-  const stepsB = eventsToExportSteps(state.voices[state.hlVB]);
+  const stepsA = eventsToSoundingSteps(state.voices[state.hlVA]);
+  const stepsB = eventsToSoundingSteps(state.voices[state.hlVB]);
   state.hlIndices = findIntervalIndices(stepsA, stepsB, state.hlDeg);
   for (const v of VOICES) refreshVoice(v);
   setStatus(`${state.hlDeg}度: ${state.hlIndices.length} 箇所ハイライト`);

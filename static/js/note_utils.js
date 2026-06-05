@@ -136,6 +136,17 @@ function findIntervalIndices(stepsA, stepsB, degree) {
   return idxs;
 }
 
+// 度数HL用: 音符が鳴っている全ステップにピッチを埋めた配列を返す
+function eventsToSoundingSteps(events) {
+  const steps = Array(STEPS).fill("blank");
+  for (const ev of events) {
+    if (ev.step < 0 || ev.step >= STEPS || ev.pitch === "R") continue;
+    for (let k = 0; k < ev.dur && ev.step + k < STEPS; k++)
+      steps[ev.step + k] = ev.pitch;
+  }
+  return steps;
+}
+
 // ── コード進行ステップ展開 ──────────────────────────────────
 
 function chordNamesToSteps(chordNames) {
