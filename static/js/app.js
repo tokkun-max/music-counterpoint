@@ -506,6 +506,26 @@ function clearHL() {
   for (const v of VOICES) refreshVoice(v);
 }
 
+function selectHLVoice(voice) {
+  if (!state.hlIndices.length) { setStatus("先にハイライトを適用してください。"); return; }
+  const hlSet = new Set(state.hlIndices);
+  const matched = state.voices[voice].filter(ev => {
+    if (ev.pitch === "R") return false;
+    for (let s = ev.step; s < ev.step + ev.dur; s++) {
+      if (hlSet.has(s)) return true;
+    }
+    return false;
+  });
+  if (!matched.length) { setStatus(`[${V_LABELS[voice]}] ハイライト音符なし`); return; }
+  state.selVoice = voice;
+  state.selSteps = new Set(matched.map(ev => ev.step));
+  state.selEv    = matched[0];
+  scorePanel.clearSelected();
+  scorePanel.setSelected(voice, state.selSteps);
+  updateEditorInfo();
+  setStatus(`[${V_LABELS[voice]}] ${matched.length}音を一括選択しました。`);
+}
+
 // ═══════════════════════════════════════════════════════
 //  バックエンド API
 // ═══════════════════════════════════════════════════════
@@ -835,6 +855,8 @@ window.addEventListener("DOMContentLoaded", async () => {
     applyHL();
   });
   document.getElementById("hl-clear-btn").addEventListener("click", clearHL);
+  document.getElementById("hl-select-a-btn").addEventListener("click", () => selectHLVoice(state.hlVA));
+  document.getElementById("hl-select-b-btn").addEventListener("click", () => selectHLVoice(state.hlVB));
 
   document.getElementById("ol-apply-btn").addEventListener("click", () => {
     state.olVA = document.getElementById("ol-va").value;
