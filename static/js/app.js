@@ -412,22 +412,20 @@ function setDur(newDur) {
   if (newDur === oldDur) return;
 
   if (newDur > oldDur) {
-    // ── 拡張: 休符は踏み越し、次の実音符まで ──
-    const nextNoteStep = state.voices[state.selVoice]
-      .filter(ev => ev.step > step && ev.pitch !== "R")
-      .reduce((min, ev) => Math.min(min, ev.step), 64);
-    const maxDur = nextNoteStep - step;
-
-    if (newDur > maxDur) {
-      setStatus(`[${V_LABELS[state.selVoice]}] 次の音符まで: ${maxDur}step（${durLabel(maxDur)}まで）`);
-      return;
-    }
-
+    // ── 拡張: 後続イベントを右シフト（短縮の逆操作）──
+    const gap = newDur - oldDur;
     pushUndo();
-    const newEnd = step + newDur;
-    const evs = state.voices[state.selVoice].filter(ev =>
-      ev.step !== step && !(ev.step > step && ev.step < newEnd)
-    );
+
+    const evs = state.voices[state.selVoice]
+      .filter(ev => ev.step !== step)
+      .map(ev => {
+        if (ev.step < step + oldDur) return ev;
+        const newStep = ev.step + gap;
+        if (newStep >= 64) return null;
+        return { ...ev, step: newStep, dur: Math.min(ev.dur, 64 - newStep) };
+      })
+      .filter(Boolean);
+
     evs.push({ step, pitch, dur: newDur });
     evs.sort((a, b) => a.step - b.step);
     state.voices[state.selVoice] = evs;
