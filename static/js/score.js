@@ -13,18 +13,19 @@ const PAD_R      = 12;
 
 // ── 色 ──
 const C = {
-  bg:        "#ffffff",
-  staff:     "#444",
-  bar:       "#666",
-  noteFill:  "#111",
-  noteOpen:  "#ffffff",
-  stem:      "#111",
-  hlFill:    "#ffe066",
-  selBorder: "#3498db",
-  rest:      "#555",
-  play:      "#27ae60",
-  drag:      "#3498db",
-  label:     "#999",
+  bg:          "#ffffff",
+  staff:       "#444",
+  bar:         "#666",
+  noteFill:    "#111",
+  noteOpen:    "#ffffff",
+  stem:        "#111",
+  hlFill:      "#ffe066",
+  overlapFill: "rgba(57, 255, 20, 0.28)",
+  selBorder:   "#3498db",
+  rest:        "#555",
+  play:        "#27ae60",
+  drag:        "#3498db",
+  label:       "#999",
 };
 
 // ── 音高→Y座標 ──
@@ -52,8 +53,9 @@ class ScoreCanvas {
     this.voice    = voiceName;
     this.clef     = clef;
     this.events   = [];
-    this.hlSteps  = new Set();
-    this.selSteps = new Set();
+    this.hlSteps      = new Set();
+    this.selSteps     = new Set();
+    this.overlapSteps = new Set();
     this.playStep = null;
     this.hitBoxes = [];
     // ズーム
@@ -73,10 +75,11 @@ class ScoreCanvas {
   }
 
   // ── 公開 API ──────────────────────────────────────
-  setEvents(events, hlSteps = [], selSteps = new Set()) {
-    this.events   = events || [];
-    this.hlSteps  = new Set(hlSteps);
-    this.selSteps = selSteps;
+  setEvents(events, hlSteps = [], selSteps = new Set(), overlapSteps = new Set()) {
+    this.events       = events || [];
+    this.hlSteps      = new Set(hlSteps);
+    this.selSteps     = selSteps;
+    this.overlapSteps = overlapSteps;
     this.render();
   }
 
@@ -275,7 +278,12 @@ class ScoreCanvas {
     const isSel    = this.selSteps.has(stepI);
     const multiSel = this.selSteps.size > 1;
 
-    // HL 背景
+    // 重複HL背景（緑）
+    if (this.overlapSteps.has(stepI)) {
+      ctx.fillStyle = C.overlapFill;
+      ctx.fillRect(x0 + (stepI - this.viewStart) * stepW, MARGIN_TOP, dur * stepW, STAFF_H);
+    }
+    // HL 背景（黄）
     if (isHL) {
       ctx.fillStyle = C.hlFill;
       ctx.fillRect(x0 + (stepI - this.viewStart) * stepW, MARGIN_TOP, dur * stepW, STAFF_H);
@@ -491,8 +499,8 @@ function createScorePanel(containerEl, callbacks) {
 
   return {
     canvases,
-    update(voice, events, hlSteps, selSteps) {
-      if (canvases[voice]) canvases[voice].setEvents(events, hlSteps, selSteps);
+    update(voice, events, hlSteps, selSteps, overlapSteps = new Set()) {
+      if (canvases[voice]) canvases[voice].setEvents(events, hlSteps, selSteps, overlapSteps);
     },
     setPlayStep(step) {
       for (const sc of Object.values(canvases)) sc.setPlayStep(step);

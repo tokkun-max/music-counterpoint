@@ -152,9 +152,27 @@ function stopPlayback() {
 
 let scorePanel = null;
 
+function computeOverlapSteps() {
+  const soundingCount = new Array(64).fill(0);
+  for (const voice of VOICES) {
+    for (const ev of state.voices[voice]) {
+      if (ev.pitch === "R") continue;
+      for (let s = ev.step; s < Math.min(ev.step + ev.dur, 64); s++) soundingCount[s]++;
+    }
+  }
+  const overlap = new Set();
+  for (const voice of VOICES) {
+    for (const ev of state.voices[voice]) {
+      if (ev.pitch !== "R" && soundingCount[ev.step] >= 2) overlap.add(ev.step);
+    }
+  }
+  return overlap;
+}
+
 function refreshVoice(voice) {
-  const hlIdx = (state.hlVA === voice || state.hlVB === voice) ? state.hlIndices : [];
-  scorePanel.update(voice, state.voices[voice], hlIdx, state.selSteps);
+  const hlIdx      = (state.hlVA === voice || state.hlVB === voice) ? state.hlIndices : [];
+  const overlapSteps = computeOverlapSteps();
+  scorePanel.update(voice, state.voices[voice], hlIdx, state.selSteps, overlapSteps);
   if (state.selVoice === voice) scorePanel.setSelected(voice, state.selSteps);
 }
 
