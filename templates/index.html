@@ -39,16 +39,24 @@
                 font-family:monospace; font-size:12px;">
 </div>
 
-<!-- ─── 重複ハイライト ─── -->
-<div class="panel" id="ol-panel">
-  <div class="panel-title" style="display:inline;">重複ハイライト</div>
-  <div style="display:flex; align-items:center; gap:8px; margin-top:5px; flex-wrap:wrap;">
-    <label>声部A:</label>
-    <select id="ol-va"></select>
-    <label>声部B:</label>
-    <select id="ol-vb"></select>
-    <button id="ol-apply-btn" class="btn btn-green" style="padding:4px 12px;">ハイライト</button>
-    <button id="ol-clear-btn" class="btn btn-gray"  style="padding:4px 10px;">クリア</button>
+<!-- ─── 音符エディタ ─── -->
+<div class="panel">
+  <div class="panel-title">
+    音符エディタ &nbsp;
+    <span style="color:#888; font-weight:normal; font-size:10px;">
+      [↑↓]音高 &nbsp; [←→]移動 &nbsp; [+/-]音価 &nbsp; [0]休符切替 &nbsp; [Del]削除 &nbsp; [Ctrl+Z]戻る
+    </span>
+  </div>
+  <div id="editor-info" class="editor-info">（音符をクリックまたはドラッグで選択）</div>
+  <div class="editor-btns">
+    <button id="btn-pitch-up"   class="dur-btn">▲半音</button>
+    <button id="btn-pitch-down" class="dur-btn">▼半音</button>
+    <span class="sep">|</span>
+    <div id="dur-buttons" style="display:flex; gap:3px; flex-wrap:wrap;"></div>
+    <span class="sep">|</span>
+    <button id="btn-rest"   class="dur-btn" style="background:#fab1a0;">休符[0]</button>
+    <button id="btn-delete" class="dur-btn" style="background:#d63031; color:#fff;">削除[Del]</button>
+    <button id="btn-undo"   class="dur-btn" style="background:#95a5a6; color:#fff;">戻る[Ctrl+Z]</button>
   </div>
 </div>
 
