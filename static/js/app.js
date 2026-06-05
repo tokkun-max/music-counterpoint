@@ -215,33 +215,12 @@ function onDragSelect(voice, selections) {
   updateEditorInfo();
 }
 
-// 小節内の使用済みステップ数を返す
-function measureUsedSteps(events, step) {
-  const mStart = Math.floor(step / 16) * 16;
-  const mEnd   = mStart + 16;
-  let used = 0;
-  for (const ev of events) {
-    const oStart = Math.max(ev.step, mStart);
-    const oEnd   = Math.min(ev.step + ev.dur, mEnd);
-    if (oEnd > oStart) used += oEnd - oStart;
-  }
-  return used;
-}
-
 // ダブルクリックで8分音符（2ステップ）を挿入
 function onInsert(voice, step) {
   // すでに音符がある場合は挿入しない（選択のみ）
   const existing = findEventAt(state.voices[voice], step);
   if (existing) {
     onNoteSelect(voice, step, existing.pitch, existing.dur);
-    return;
-  }
-
-  // 小節キャパシティチェック（八分音符 = 2step）
-  const used = measureUsedSteps(state.voices[voice], step);
-  const mNo  = Math.floor(step / 16) + 1;
-  if (used + 2 > 16) {
-    setStatus(`[${V_LABELS[voice]}] ${mNo}小節目はキャパオーバーです（空き ${16 - used}step）`);
     return;
   }
 
@@ -343,20 +322,17 @@ function cycleDur(dir) {
 function setDur(newDur) {
   if (!state.selEv || !state.selVoice) return;
 
-  const step   = state.selEv.step;
-  const pitch  = state.selEv.pitch;
-  const mStart = Math.floor(step / 16) * 16;
-  const mEnd   = mStart + 16;
+  const step  = state.selEv.step;
+  const pitch = state.selEv.pitch;
 
-  // 現在の音符を除いた小節内の使用済みステップ数から最大音価を算出
-  const othersUsed = measureUsedSteps(
-    state.voices[state.selVoice].filter(ev => ev.step !== step),
-    step
-  );
-  const maxDur = Math.min(mEnd - step, 16 - othersUsed);
+  // 現在の音符より後にある最初の音符のステップ（なければ64）
+  const nextStep = state.voices[state.selVoice]
+    .filter(ev => ev.step > step)
+    .reduce((min, ev) => Math.min(min, ev.step), 64);
+  const maxDur = nextStep - step;
 
   if (newDur > maxDur) {
-    setStatus(`[${V_LABELS[state.selVoice]}] この小節の空き: ${maxDur}step（${durLabel(maxDur)}まで）`);
+    setStatus(`[${V_LABELS[state.selVoice]}] 空き: ${maxDur}step（${durLabel(maxDur)}まで）`);
     return;
   }
 

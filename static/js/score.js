@@ -212,15 +212,6 @@ class ScoreCanvas {
     const x0    = CLEF_W + 4;
     const stepW = this._stepW();
 
-    // 小節線（表示範囲内のみ）
-    ctx.strokeStyle = C.bar; ctx.lineWidth = 1;
-    for (let m = 0; m <= 4; m++) {
-      const barStep = m * 16;
-      if (barStep < this.viewStart || barStep > vEnd) continue;
-      const x = x0 + (barStep - this.viewStart) * stepW;
-      ctx.beginPath(); ctx.moveTo(x, MARGIN_TOP); ctx.lineTo(x, MARGIN_TOP + STAFF_H); ctx.stroke();
-    }
-
     // 再生カーソル
     if (this.playStep !== null && this.playStep >= this.viewStart && this.playStep < vEnd) {
       ctx.strokeStyle = C.play; ctx.lineWidth = 2;
