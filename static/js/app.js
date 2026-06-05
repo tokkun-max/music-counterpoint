@@ -33,6 +33,7 @@ const state = {
   olVA:         "melody",
   olVB:         "mid",
   olIndices:    [],
+  clipboard:    null,
   undoStack:    [],
   isPlaying:    false,
   playStep:     null,
@@ -300,6 +301,51 @@ function pushUndo() {
   for (const v of VOICES) snap[v] = state.voices[v].map(ev => ({...ev}));
   state.undoStack.push(snap);
   if (state.undoStack.length > MAX_UNDO) state.undoStack.shift();
+}
+
+function copySelection() {
+  if (!state.selVoice || !state.selSteps.size) return;
+  const evs = state.voices[state.selVoice].filter(ev => state.selSteps.has(ev.step));
+  if (!evs.length) return;
+  const baseStep  = Math.min(...evs.map(ev => ev.step));
+  const totalDur  = Math.max(...evs.map(ev => ev.step + ev.dur)) - baseStep;
+  state.clipboard = {
+    notes: evs.map(ev => ({ relStep: ev.step - baseStep, pitch: ev.pitch, dur: ev.dur })),
+    totalDur,
+  };
+  setStatus(`${evs.length}音コピー。貼り付けたい位置を選択して Ctrl+V`);
+}
+
+function pasteSelection() {
+  if (!state.clipboard || !state.selVoice || !state.selSteps.size) return;
+  const pasteStart = Math.min(...state.selSteps);
+  const pasteEnd   = pasteStart + state.clipboard.totalDur;
+
+  pushUndo();
+
+  // ペースト範囲内の既存音符を除去
+  const evs = state.voices[state.selVoice].filter(ev =>
+    !(ev.step >= pasteStart && ev.step < pasteEnd)
+  );
+
+  // コピーした音符を配置（64ステップを超えるものはクリップ）
+  for (const n of state.clipboard.notes) {
+    const newStep = pasteStart + n.relStep;
+    if (newStep >= 64) continue;
+    evs.push({ step: newStep, pitch: n.pitch, dur: Math.min(n.dur, 64 - newStep) });
+  }
+
+  evs.sort((a, b) => a.step - b.step);
+  state.voices[state.selVoice] = evs;
+
+  const newSteps = state.clipboard.notes.map(n => pasteStart + n.relStep).filter(s => s < 64);
+  state.selSteps = new Set(newSteps);
+  state.selEv    = newSteps.length ? findEventAt(state.voices[state.selVoice], Math.min(...newSteps)) : null;
+
+  refreshVoice(state.selVoice);
+  scorePanel.setSelected(state.selVoice, state.selSteps);
+  updateEditorInfo();
+  setStatus(`${state.clipboard.notes.length}音貼り付けました。Ctrl+Z で元に戻せます。`);
 }
 
 function undo() {
@@ -686,6 +732,8 @@ function initKeyBindings() {
     if (e.key === "0")         { e.preventDefault(); toggleRest();  return; }
     if (e.key === "Delete")    { e.preventDefault(); deleteSel();   return; }
     if (e.ctrlKey && e.key.toLowerCase() === "z") { e.preventDefault(); undo(); return; }
+    if (e.ctrlKey && e.key.toLowerCase() === "c") { e.preventDefault(); copySelection(); return; }
+    if (e.ctrlKey && e.key.toLowerCase() === "v") { e.preventDefault(); pasteSelection(); return; }
   });
 }
 
