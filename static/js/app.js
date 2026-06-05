@@ -627,6 +627,7 @@ function buildChordSelectors() {
 
 function buildDurButtons() {
   const container = document.getElementById("dur-buttons");
+  if (!container) return;
   container.innerHTML = "";
   const pairs = [["全",16],["付二",12],["二",8],["付四",6],["四",4],["付八",3],["八",2],["十六",1]];
   for (const [lbl, steps] of pairs) {
@@ -784,12 +785,12 @@ window.addEventListener("DOMContentLoaded", async () => {
   });
   document.getElementById("ol-clear-btn").addEventListener("click", clearOL);
 
-  // 音符エディタのボタン
-  document.getElementById("btn-pitch-up")  .addEventListener("click", () => shiftPitchSel(+1));
-  document.getElementById("btn-pitch-down").addEventListener("click", () => shiftPitchSel(-1));
-  document.getElementById("btn-rest")      .addEventListener("click", toggleRest);
-  document.getElementById("btn-delete")    .addEventListener("click", deleteSel);
-  document.getElementById("btn-undo")      .addEventListener("click", undo);
+  // 音符エディタのボタン（要素が存在する場合のみ）
+  document.getElementById("btn-pitch-up")  ?.addEventListener("click", () => shiftPitchSel(+1));
+  document.getElementById("btn-pitch-down")?.addEventListener("click", () => shiftPitchSel(-1));
+  document.getElementById("btn-rest")      ?.addEventListener("click", toggleRest);
+  document.getElementById("btn-delete")    ?.addEventListener("click", deleteSel);
+  document.getElementById("btn-undo")      ?.addEventListener("click", undo);
 
   // キーバインド
   initKeyBindings();
