@@ -409,33 +409,49 @@ function setDur(newDur) {
   const pitch  = state.selEv.pitch;
   const oldDur = state.selEv.dur;
 
-  // 現在の音符より後にある最初の音符のステップ（なければ64）
-  const nextStep = state.voices[state.selVoice]
-    .filter(ev => ev.step > step)
-    .reduce((min, ev) => Math.min(min, ev.step), 64);
-  const maxDur = nextStep - step;
+  if (newDur === oldDur) return;
 
-  if (newDur > maxDur) {
-    setStatus(`[${V_LABELS[state.selVoice]}] 空き: ${maxDur}step（${durLabel(maxDur)}まで）`);
-    return;
+  if (newDur > oldDur) {
+    // ── 拡張: 休符は踏み越し、次の実音符まで ──
+    const nextNoteStep = state.voices[state.selVoice]
+      .filter(ev => ev.step > step && ev.pitch !== "R")
+      .reduce((min, ev) => Math.min(min, ev.step), 64);
+    const maxDur = nextNoteStep - step;
+
+    if (newDur > maxDur) {
+      setStatus(`[${V_LABELS[state.selVoice]}] 次の音符まで: ${maxDur}step（${durLabel(maxDur)}まで）`);
+      return;
+    }
+
+    pushUndo();
+    const newEnd = step + newDur;
+    const evs = state.voices[state.selVoice].filter(ev =>
+      ev.step !== step && !(ev.step > step && ev.step < newEnd)
+    );
+    evs.push({ step, pitch, dur: newDur });
+    evs.sort((a, b) => a.step - b.step);
+    state.voices[state.selVoice] = evs;
+
+  } else {
+    // ── 短縮: 後続イベントを左シフト、末尾に休符を追加 ──
+    const gap = oldDur - newDur;
+    pushUndo();
+
+    const evs = state.voices[state.selVoice]
+      .filter(ev => ev.step !== step)
+      .map(ev => ev.step >= step + oldDur
+        ? { ...ev, step: ev.step - gap }
+        : ev
+      );
+    evs.push({ step, pitch, dur: newDur });
+
+    // 末尾の空きを休符で埋める
+    const lastEnd = evs.reduce((max, ev) => Math.max(max, ev.step + ev.dur), 0);
+    if (lastEnd < 64) evs.push({ step: lastEnd, pitch: "R", dur: 64 - lastEnd });
+
+    evs.sort((a, b) => a.step - b.step);
+    state.voices[state.selVoice] = evs;
   }
-
-  pushUndo();
-  const newEnd = step + newDur;
-
-  // 対象イベントを除去し、拡張時は被る範囲のイベントも除去
-  const evs = state.voices[state.selVoice].filter(ev =>
-    ev.step !== step && !(ev.step > step && ev.step < newEnd)
-  );
-  evs.push({ step, pitch, dur: newDur });
-
-  // 短縮した場合、空いた分を休符で埋める
-  if (newDur < oldDur) {
-    evs.push({ step: step + newDur, pitch: "R", dur: oldDur - newDur });
-  }
-
-  evs.sort((a, b) => a.step - b.step);
-  state.voices[state.selVoice] = evs;
 
   state.selEv = findEventAt(state.voices[state.selVoice], step);
   if (state.selEv) state.selSteps = new Set([state.selEv.step]);
