@@ -30,6 +30,9 @@ const state = {
   hlVB:         "mid",
   hlDeg:        3,
   hlIndices:    [],
+  olVA:         "melody",
+  olVB:         "mid",
+  olIndices:    [],
   undoStack:    [],
   isPlaying:    false,
   playStep:     null,
@@ -152,27 +155,54 @@ function stopPlayback() {
 
 let scorePanel = null;
 
-function computeOverlapSteps() {
-  const soundingCount = new Array(64).fill(0);
-  for (const voice of VOICES) {
-    for (const ev of state.voices[voice]) {
-      if (ev.pitch === "R") continue;
-      for (let s = ev.step; s < Math.min(ev.step + ev.dur, 64); s++) soundingCount[s]++;
-    }
+function applyOL() {
+  const soundingA = new Set();
+  for (const ev of state.voices[state.olVA]) {
+    if (ev.pitch === "R") continue;
+    for (let s = ev.step; s < Math.min(ev.step + ev.dur, 64); s++) soundingA.add(s);
   }
-  const overlap = new Set();
-  for (const voice of VOICES) {
-    for (const ev of state.voices[voice]) {
-      if (ev.pitch !== "R" && soundingCount[ev.step] >= 2) overlap.add(ev.step);
-    }
+  const soundingB = new Set();
+  for (const ev of state.voices[state.olVB]) {
+    if (ev.pitch === "R") continue;
+    for (let s = ev.step; s < Math.min(ev.step + ev.dur, 64); s++) soundingB.add(s);
   }
-  return overlap;
+  const indices = new Set();
+  for (const ev of state.voices[state.olVA]) {
+    if (ev.pitch !== "R" && soundingB.has(ev.step)) indices.add(ev.step);
+  }
+  for (const ev of state.voices[state.olVB]) {
+    if (ev.pitch !== "R" && soundingA.has(ev.step)) indices.add(ev.step);
+  }
+  state.olIndices = [...indices];
+  for (const v of VOICES) refreshVoice(v);
+  setStatus(`重複ハイライト: ${state.olIndices.length} 箇所`);
+}
+
+function clearOL() {
+  state.olIndices = [];
+  for (const v of VOICES) refreshVoice(v);
+  setStatus("重複ハイライトをクリアしました。");
+}
+
+function buildOLPanel() {
+  const vaEl = document.getElementById("ol-va");
+  const vbEl = document.getElementById("ol-vb");
+  for (const v of VOICES) {
+    [vaEl, vbEl].forEach(sel => {
+      const opt = document.createElement("option");
+      opt.value = v; opt.textContent = V_LABELS[v]; sel.appendChild(opt);
+    });
+  }
+  vaEl.value = "melody";
+  vbEl.value = "mid";
+  vaEl.addEventListener("change", () => { state.olVA = vaEl.value; });
+  vbEl.addEventListener("change", () => { state.olVB = vbEl.value; });
 }
 
 function refreshVoice(voice) {
-  const hlIdx      = (state.hlVA === voice || state.hlVB === voice) ? state.hlIndices : [];
-  const overlapSteps = computeOverlapSteps();
-  scorePanel.update(voice, state.voices[voice], hlIdx, state.selSteps, overlapSteps);
+  const hlIdx = (state.hlVA === voice || state.hlVB === voice) ? state.hlIndices : [];
+  const olIdx = (state.olVA === voice || state.olVB === voice) ? state.olIndices : [];
+  scorePanel.update(voice, state.voices[voice], hlIdx, state.selSteps, new Set(olIdx));
   if (state.selVoice === voice) scorePanel.setSelected(voice, state.selSteps);
 }
 
@@ -690,6 +720,7 @@ window.addEventListener("DOMContentLoaded", async () => {
   buildChordSelectors();
   buildDurButtons();
   buildHLPanel();
+  buildOLPanel();
 
   // スコアパネル初期化
   scorePanel = SCORE.createScorePanel(document.getElementById("score-area"), {
@@ -745,6 +776,13 @@ window.addEventListener("DOMContentLoaded", async () => {
     applyHL();
   });
   document.getElementById("hl-clear-btn").addEventListener("click", clearHL);
+
+  document.getElementById("ol-apply-btn").addEventListener("click", () => {
+    state.olVA = document.getElementById("ol-va").value;
+    state.olVB = document.getElementById("ol-vb").value;
+    applyOL();
+  });
+  document.getElementById("ol-clear-btn").addEventListener("click", clearOL);
 
   // 音符エディタのボタン
   document.getElementById("btn-pitch-up")  .addEventListener("click", () => shiftPitchSel(+1));
