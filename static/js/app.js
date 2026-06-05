@@ -359,8 +359,9 @@ function cycleDur(dir) {
 function setDur(newDur) {
   if (!state.selEv || !state.selVoice) return;
 
-  const step  = state.selEv.step;
-  const pitch = state.selEv.pitch;
+  const step   = state.selEv.step;
+  const pitch  = state.selEv.pitch;
+  const oldDur = state.selEv.dur;
 
   // 現在の音符より後にある最初の音符のステップ（なければ64）
   const nextStep = state.voices[state.selVoice]
@@ -376,11 +377,17 @@ function setDur(newDur) {
   pushUndo();
   const newEnd = step + newDur;
 
-  // 対象イベントを除去し、拡張時は被る範囲のイベントも除去（短縮時は余剰を生まない）
+  // 対象イベントを除去し、拡張時は被る範囲のイベントも除去
   const evs = state.voices[state.selVoice].filter(ev =>
     ev.step !== step && !(ev.step > step && ev.step < newEnd)
   );
   evs.push({ step, pitch, dur: newDur });
+
+  // 短縮した場合、空いた分を休符で埋める
+  if (newDur < oldDur) {
+    evs.push({ step: step + newDur, pitch: "R", dur: oldDur - newDur });
+  }
+
   evs.sort((a, b) => a.step - b.step);
   state.voices[state.selVoice] = evs;
 
