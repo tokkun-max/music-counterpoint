@@ -1,0 +1,183 @@
+/* 対旋律作成ツール Web版スタイル */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: "Noto Sans JP", "Segoe UI", sans-serif;
+  font-size: 13px;
+  background: #f0f0f0;
+  color: #222;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ─── トップバー ─── */
+#topbar {
+  background: #2c3e50;
+  padding: 8px 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  flex-shrink: 0;
+}
+#topbar h1 { color: #fff; font-size: 15px; font-weight: bold; margin-right: 8px; }
+
+.btn {
+  padding: 5px 12px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 500;
+  color: #fff;
+  transition: opacity .15s;
+}
+.btn:hover { opacity: .85; }
+.btn:disabled { opacity: .45; cursor: default; }
+
+.btn-blue   { background: #3498db; }
+.btn-green  { background: #27ae60; }
+.btn-purple { background: #8e44ad; }
+.btn-orange { background: #e67e22; }
+.btn-teal   { background: #16a085; }
+.btn-red    { background: #c0392b; }
+.btn-gray   { background: #7f8c8d; }
+.btn-hl-off { background: #95a5a6; }
+.btn-hl-on  { background: #e74c3c; }
+
+/* ─── パネル共通 ─── */
+.panel {
+  background: #fff;
+  border: 1px solid #d0d0d0;
+  border-radius: 6px;
+  padding: 8px 12px;
+  margin: 6px 10px 0;
+}
+.panel-title {
+  font-size: 11px;
+  font-weight: bold;
+  color: #555;
+  margin-bottom: 6px;
+}
+
+/* ─── コード進行 ─── */
+#chord-panel { display: flex; gap: 4px; align-items: flex-end; }
+.chord-selector { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+.chord-selector label { font-size: 10px; color: #777; }
+.chord-selector select {
+  padding: 3px 4px;
+  border: 1px solid #ccc;
+  border-radius: 3px;
+  font-size: 12px;
+  background: #fafafa;
+  width: 64px;
+}
+
+/* ─── 主旋律入力 ─── */
+#melody-panel input[type=text] {
+  width: 100%;
+  padding: 5px 8px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-family: monospace;
+  font-size: 12px;
+}
+
+/* ─── 音符エディタ ─── */
+#editor-panel .editor-info {
+  font-size: 12px;
+  font-weight: bold;
+  color: #c0392b;
+  margin-bottom: 5px;
+  min-height: 18px;
+}
+#editor-panel .editor-btns {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+  align-items: center;
+}
+.dur-btn {
+  padding: 4px 7px;
+  background: #dfe6e9;
+  border: 1px solid #bdc3c7;
+  border-radius: 3px;
+  cursor: pointer;
+  font-size: 11px;
+}
+.dur-btn:hover { background: #b2bec3; }
+.sep { color: #aaa; margin: 0 4px; }
+
+/* ─── HL パネル ─── */
+#hl-panel { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+#hl-panel label { font-size: 11px; color: #666; }
+#hl-panel select {
+  padding: 3px 6px;
+  border: 1px solid #ccc;
+  border-radius: 3px;
+  font-size: 12px;
+}
+
+/* ─── スコアエリア ─── */
+#score-area {
+  flex: 1;
+  overflow-y: auto;
+  margin: 6px 10px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.voice-row {
+  background: #fff;
+  border: 1px solid #d0d0d0;
+  border-radius: 4px;
+  display: flex;
+  align-items: stretch;
+}
+.voice-label {
+  width: 70px;
+  min-width: 70px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding-right: 6px;
+  font-size: 11px;
+  font-weight: bold;
+  color: #444;
+  background: #eee;
+  border-right: 1px solid #d0d0d0;
+  border-radius: 4px 0 0 4px;
+}
+.voice-canvas {
+  flex: 1;
+  display: block;
+  height: 104px;
+  cursor: crosshair;
+}
+
+/* ─── ステータスバー ─── */
+#statusbar {
+  background: #dde;
+  border-top: 1px solid #b0b4c0;
+  padding: 4px 14px;
+  font-size: 11px;
+  color: #333;
+  flex-shrink: 0;
+}
+
+/* ─── モーダルオーバーレイ（ローディング） ─── */
+#loading {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 999;
+  color: #fff;
+  font-size: 16px;
+  display: none;
+}
+
+/* ─── ファイル入力（非表示） ─── */
+#csv-file-input { display: none; }

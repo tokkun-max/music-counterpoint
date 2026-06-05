@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>対旋律作成ツール</title>
+  <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+
+<!-- ローディング -->
+<div id="loading">読み込み中…</div>
+
+<!-- CSV ファイル入力（非表示） -->
+<input type="file" id="csv-file-input" accept=".csv">
+
+<!-- ─── トップバー ─── -->
+<div id="topbar">
+  <h1>対旋律作成ツール</h1>
+  <button id="btn-import"   class="btn btn-blue"  >CSVインポート</button>
+  <button id="btn-new"      class="btn btn-gray"  >新規作成</button>
+  <button id="btn-generate" class="btn btn-green" >対旋律を自動生成</button>
+  <button id="btn-midi"     class="btn btn-purple">MIDI出力</button>
+  <button id="btn-csv"      class="btn btn-orange">CSV出力</button>
+  <button id="play-btn"     class="btn btn-teal"  >▶ 再生</button>
+</div>
+
+<!-- ─── コード進行 ─── -->
+<div class="panel" style="display:flex; align-items:center; gap:16px;">
+  <div class="panel-title" style="white-space:nowrap">コード進行</div>
+  <div id="chord-selectors" style="display:flex; gap:8px;"></div>
+</div>
+
+<!-- ─── 主旋律 ─── -->
+<div class="panel">
+  <div class="panel-title">主旋律テキスト（音名 スペース区切り、例: E4 F4 G4 blank）</div>
+  <input type="text" id="melody-input"
+         style="width:100%; padding:5px 8px; border:1px solid #ccc; border-radius:4px;
+                font-family:monospace; font-size:12px;">
+</div>
+
+<!-- ─── 音符エディタ ─── -->
+<div class="panel">
+  <div class="panel-title">
+    音符エディタ &nbsp;
+    <span style="color:#888; font-weight:normal; font-size:10px;">
+      [↑↓]音高 &nbsp; [←→]移動 &nbsp; [+/-]音価 &nbsp; [0]休符切替 &nbsp; [Del]削除 &nbsp; [Ctrl+Z]戻る
+    </span>
+  </div>
+  <div id="editor-info" class="editor-info">（音符をクリックまたはドラッグで選択）</div>
+  <div class="editor-btns">
+    <button id="btn-pitch-up"   class="dur-btn">▲半音</button>
+    <button id="btn-pitch-down" class="dur-btn">▼半音</button>
+    <span class="sep">|</span>
+    <div id="dur-buttons" style="display:flex; gap:3px; flex-wrap:wrap;"></div>
+    <span class="sep">|</span>
+    <button id="btn-rest"   class="dur-btn" style="background:#fab1a0;">休符[0]</button>
+    <button id="btn-delete" class="dur-btn" style="background:#d63031; color:#fff;">削除[Del]</button>
+    <button id="btn-undo"   class="dur-btn" style="background:#95a5a6; color:#fff;">戻る[Ctrl+Z]</button>
+  </div>
+</div>
+
+<!-- ─── 度数ハイライト ─── -->
+<div class="panel" id="hl-panel">
+  <div class="panel-title" style="display:inline;">度数ハイライト</div>
+  <div style="display:flex; align-items:center; gap:8px; margin-top:5px; flex-wrap:wrap;">
+    <button id="hl-toggle-btn" class="btn btn-hl-off" style="width:72px;">HL: OFF</button>
+    <label>声部A:</label>
+    <select id="hl-va"></select>
+    <label>声部B:</label>
+    <select id="hl-vb"></select>
+    <label>度数:</label>
+    <select id="hl-deg" style="width:50px;"></select>
+    <button id="hl-apply-btn" class="btn btn-blue" style="padding:4px 12px;">ハイライト</button>
+    <button id="hl-clear-btn" class="btn btn-gray" style="padding:4px 10px;">クリア</button>
+  </div>
+</div>
+
+<!-- ─── スコアエリア ─── -->
+<div id="score-area"></div>
+
+<!-- ─── ステータスバー ─── -->
+<div id="statusbar">起動中…</div>
+
+<!-- Tone.js (CDN) -->
+<script src="https://cdn.jsdelivr.net/npm/tone@14/build/Tone.js"></script>
+<!-- アプリ JavaScript -->
+<script src="/static/js/note_utils.js"></script>
+<script src="/static/js/score.js"></script>
+<script src="/static/js/app.js"></script>
+</body>
+</html>
