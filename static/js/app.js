@@ -156,24 +156,13 @@ function stopPlayback() {
 let scorePanel = null;
 
 function applyOL() {
-  const soundingA = new Set();
-  for (const ev of state.voices[state.olVA]) {
-    if (ev.pitch === "R") continue;
-    for (let s = ev.step; s < Math.min(ev.step + ev.dur, 64); s++) soundingA.add(s);
-  }
-  const soundingB = new Set();
-  for (const ev of state.voices[state.olVB]) {
-    if (ev.pitch === "R") continue;
-    for (let s = ev.step; s < Math.min(ev.step + ev.dur, 64); s++) soundingB.add(s);
-  }
-  const indices = new Set();
-  for (const ev of state.voices[state.olVA]) {
-    if (ev.pitch !== "R" && soundingB.has(ev.step)) indices.add(ev.step);
-  }
-  for (const ev of state.voices[state.olVB]) {
-    if (ev.pitch !== "R" && soundingA.has(ev.step)) indices.add(ev.step);
-  }
-  state.olIndices = [...indices];
+  const onsetsA = new Set(
+    state.voices[state.olVA].filter(ev => ev.pitch !== "R").map(ev => ev.step)
+  );
+  const onsetsB = new Set(
+    state.voices[state.olVB].filter(ev => ev.pitch !== "R").map(ev => ev.step)
+  );
+  state.olIndices = [...onsetsA].filter(s => onsetsB.has(s));
   for (const v of VOICES) refreshVoice(v);
   setStatus(`重複ハイライト: ${state.olIndices.length} 箇所`);
 }
