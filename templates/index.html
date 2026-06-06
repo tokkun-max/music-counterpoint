@@ -31,10 +31,12 @@
   <div id="chord-selectors" style="display:flex; gap:8px;"></div>
 </div>
 
-<!-- ─── 八分音符挿入モード ─── -->
+<!-- ─── ドラッグ挿入 ─── -->
 <div class="panel" style="display:flex; align-items:center; gap:12px;">
-  <button id="insert-eighth-btn" class="btn btn-insert-off">♪ 八分音符挿入: OFF</button>
-  <span style="font-size:11px; color:#777;">ON にしてスコアをダブルクリック → 八分音符を挿入</span>
+  <span style="font-size:11px; color:#555; font-weight:bold;">ドラッグ挿入:</span>
+  <button id="insert-note-btn" class="btn btn-insert-note" draggable="true">♪ 八分音符</button>
+  <button id="insert-rest-btn" class="btn btn-insert-rest" draggable="true">♩ 八分休符</button>
+  <span style="font-size:11px; color:#aaa;">← スコアの空きにドラッグして挿入</span>
 </div>
 
 <!-- ─── 重複ハイライト ─── -->

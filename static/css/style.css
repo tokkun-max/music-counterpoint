@@ -45,8 +45,10 @@ body {
 .btn-gray   { background: #7f8c8d; }
 .btn-hl-off     { background: #95a5a6; }
 .btn-hl-on      { background: #e74c3c; }
-.btn-insert-off { background: #95a5a6; }
-.btn-insert-on  { background: #2980b9; }
+.btn-insert-note { background: #2980b9; cursor: grab; }
+.btn-insert-rest { background: #7f8c8d; cursor: grab; }
+.btn-insert-note:active, .btn-insert-rest:active { cursor: grabbing; }
+.voice-canvas.drag-over { outline: 2px solid #2980b9; outline-offset: -2px; }
 
 /* ─── パネル共通 ─── */
 .panel {

@@ -65,6 +65,7 @@ class ScoreCanvas {
     this.onSelect     = callbacks.onSelect     || null;
     this.onDragSelect = callbacks.onDragSelect || null;
     this.onInsert     = callbacks.onInsert     || null;
+    this.onDrop       = callbacks.onDrop       || null;
     this._lastClickTime = 0;
 
     this._drag     = null;
@@ -155,6 +156,23 @@ class ScoreCanvas {
       this._drag = null;
       this._dragRect = null;
       this.render();
+    });
+
+    // ── ボタンからのドラッグドロップ受け取り ──
+    this.canvas.addEventListener("dragover", e => {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = "copy";
+      this.canvas.classList.add("drag-over");
+    });
+    this.canvas.addEventListener("dragleave", () => {
+      this.canvas.classList.remove("drag-over");
+    });
+    this.canvas.addEventListener("drop", e => {
+      e.preventDefault();
+      this.canvas.classList.remove("drag-over");
+      const p    = this._relPos(e);
+      const step = this._xToStep(p.x);
+      if (this.onDrop) this.onDrop(this.voice, step);
     });
   }
 
@@ -483,6 +501,7 @@ function createScorePanel(containerEl, callbacks) {
       onSelect:     callbacks.onSelect,
       onDragSelect: callbacks.onDragSelect,
       onInsert:     callbacks.onInsert,
+      onDrop:       callbacks.onDrop,
     });
     canvases[meta.voice] = sc;
   }

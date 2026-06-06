@@ -26,7 +26,6 @@ const state = {
   selVoice:     null,
   selSteps:     new Set(),
   selEv:        null,
-  insertMode:   false,
   hlActive:     false,
   hlVA:         "melody",
   hlVB:         "mid",
@@ -255,44 +254,42 @@ function onDragSelect(voice, selections) {
   updateEditorInfo();
 }
 
-// ダブルクリック: 八分音符挿入モードON時のみ空きに挿入
+// ダブルクリック: 既存音符の選択のみ（挿入はドラッグで行う）
 function onInsert(voice, step) {
   const existing = findEventAt(state.voices[voice], step);
-  // 挿入モードOFF、または既存音符あり → 選択のみ
-  if (!state.insertMode || existing) {
-    if (existing) onNoteSelect(voice, step, existing.pitch, existing.dur);
+  if (existing) onNoteSelect(voice, step, existing.pitch, existing.dur);
+}
+
+// ── ドラッグ挿入 ─────────────────────────────────────────────
+let _dragInsertType = null; // "note" | "rest"
+
+function onScoreDrop(voice, step) {
+  if (!_dragInsertType) return;
+
+  // 2ステップ分（八分音符の長さ）が埋まっていたら挿入しない
+  if (findEventAt(state.voices[voice], step) ||
+      findEventAt(state.voices[voice], step + 1)) {
+    setStatus(`[${V_LABELS[voice]}] Step ${step} は埋まっているため挿入できません。`);
     return;
   }
 
-  // 直前の音符からピッチを引き継ぐ（なければ C4）
-  const prevEv = [...state.voices[voice]]
-    .filter(ev => ev.step < step && ev.pitch !== "R")
-    .sort((a, b) => b.step - a.step)[0];
-  const pitch = prevEv ? prevEv.pitch : "C4";
+  const pitch = _dragInsertType === "rest" ? "R" : (() => {
+    const prev = [...state.voices[voice]]
+      .filter(ev => ev.step < step && ev.pitch !== "R")
+      .sort((a, b) => b.step - a.step)[0];
+    return prev ? prev.pitch : "C4";
+  })();
 
   pushUndo();
-  state.voices[voice] = insertOrReplace(state.voices[voice], step, pitch, 2); // 八分音符 = 2step
+  state.voices[voice] = insertOrReplace(state.voices[voice], step, pitch, 2);
   state.selVoice = voice;
   state.selEv    = findEventAt(state.voices[voice], step);
   state.selSteps = state.selEv ? new Set([state.selEv.step]) : new Set();
   refreshVoice(voice);
   scorePanel.setSelected(voice, state.selSteps);
   updateEditorInfo();
-  setStatus(`[${V_LABELS[voice]}] Step ${step} に 八分音符（${pitch}）を挿入しました`);
-}
-
-function toggleInsertMode() {
-  state.insertMode = !state.insertMode;
-  const btn = document.getElementById("insert-eighth-btn");
-  if (state.insertMode) {
-    btn.textContent = "♪ 八分音符挿入: ON";
-    btn.classList.replace("btn-insert-off", "btn-insert-on");
-    setStatus("八分音符挿入モード: ON — スコアの空きをダブルクリックして挿入。");
-  } else {
-    btn.textContent = "♪ 八分音符挿入: OFF";
-    btn.classList.replace("btn-insert-on", "btn-insert-off");
-    setStatus("八分音符挿入モード: OFF。");
-  }
+  const label = _dragInsertType === "rest" ? "八分休符" : `八分音符（${pitch}）`;
+  setStatus(`[${V_LABELS[voice]}] Step ${step} に ${label} を挿入しました`);
 }
 
 function updateEditorInfo() {
@@ -850,6 +847,7 @@ window.addEventListener("DOMContentLoaded", async () => {
     onSelect:     onNoteSelect,
     onDragSelect: onDragSelect,
     onInsert:     onInsert,
+    onDrop:       onScoreDrop,
   });
 
   // MIDIから読み込んだ主旋律を設定（16分音符ステップ解像度）
@@ -899,7 +897,19 @@ window.addEventListener("DOMContentLoaded", async () => {
     }
   });
 
-  document.getElementById("insert-eighth-btn").addEventListener("click", toggleInsertMode);
+  // ドラッグ挿入ボタン
+  document.getElementById("insert-note-btn").addEventListener("dragstart", e => {
+    _dragInsertType = "note";
+    e.dataTransfer.setData("text/plain", "note");
+    e.dataTransfer.effectAllowed = "copy";
+  });
+  document.getElementById("insert-rest-btn").addEventListener("dragstart", e => {
+    _dragInsertType = "rest";
+    e.dataTransfer.setData("text/plain", "rest");
+    e.dataTransfer.effectAllowed = "copy";
+  });
+  document.addEventListener("dragend", () => { _dragInsertType = null; });
+
   document.getElementById("hl-toggle-btn").addEventListener("click", toggleHL);
   document.getElementById("hl-apply-btn").addEventListener("click", () => {
     state.hlVA  = document.getElementById("hl-va").value;
