@@ -240,6 +240,29 @@ function onNoteSelect(voice, step, pitch, dur, isCtrl = false) {
   updateEditorInfo();
 }
 
+function onNoteResize(voice, step, newDur) {
+  const evs  = state.voices[voice];
+  const ev   = evs.find(e => e.step === step);
+  if (!ev) return;
+
+  // 次のイベント開始位置を上限とする（重なり防止）
+  const nextStep = evs
+    .filter(e => e.step > step)
+    .reduce((min, e) => Math.min(min, e.step), 64);
+  const clampedDur = Math.max(1, Math.min(newDur, nextStep - step));
+  if (clampedDur === ev.dur) return;
+
+  pushUndo();
+  state.voices[voice] = evs.map(e => e.step === step ? { ...e, dur: clampedDur } : e);
+  state.selVoice = voice;
+  state.selEv    = state.voices[voice].find(e => e.step === step) || null;
+  state.selSteps = state.selEv ? new Set([step]) : new Set();
+  refreshVoice(voice);
+  scorePanel.setSelected(voice, state.selSteps);
+  updateEditorInfo();
+  setStatus(`[${V_LABELS[voice]}] Step ${step}: ${durLabel(clampedDur)}（${clampedDur}step）に変更`);
+}
+
 function onDragSelect(voice, selections) {
   state.selVoice = voice;
   state.selSteps = new Set(selections.map(s => s.step));
@@ -901,6 +924,7 @@ window.addEventListener("DOMContentLoaded", async () => {
     onSelect:     onNoteSelect,
     onDragSelect: onDragSelect,
     onInsert:     onInsert,
+    onResize:     onNoteResize,
   });
 
   // MIDIから読み込んだ主旋律を設定（16分音符ステップ解像度）

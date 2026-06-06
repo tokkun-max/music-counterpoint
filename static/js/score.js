@@ -65,10 +65,12 @@ class ScoreCanvas {
     this.onSelect     = callbacks.onSelect     || null;
     this.onDragSelect = callbacks.onDragSelect || null;
     this.onInsert     = callbacks.onInsert     || null;
+    this.onResize     = callbacks.onResize     || null;
     this._lastClickTime = 0;
 
-    this._drag     = null;
-    this._dragRect = null;
+    this._drag       = null;
+    this._dragRect   = null;
+    this._resizeDrag = null; // { step, pitch, origDur, startX, curDur }
 
     this._bindEvents();
     this.render();
@@ -106,15 +108,37 @@ class ScoreCanvas {
     ));
   }
 
+  _findHitBox(x, y) {
+    return this.hitBoxes.find(hb =>
+      Math.abs(x - hb.cx) <= hb.rx + 4 && Math.abs(y - hb.cy) <= hb.ry + 6
+    ) || null;
+  }
+
   _bindEvents() {
     this._pendingClick = null;
 
     this.canvas.addEventListener("mousedown", e => {
-      const p = this._relPos(e);
-      this._drag = p;
+      const p  = this._relPos(e);
+      const hb = this._findHitBox(p.x, p.y);
+      if (hb) {
+        // 音符/休符上 → リサイズドラッグ開始
+        this._resizeDrag = { step: hb.step, pitch: hb.pitch, origDur: hb.dur, startX: p.x, curDur: hb.dur };
+        document.body.style.cursor = "ew-resize";
+      } else {
+        this._drag = p;
+      }
       this._dragRect = null;
     });
+
     this.canvas.addEventListener("mousemove", e => {
+      if (this._resizeDrag) {
+        const p      = this._relPos(e);
+        const sw     = this._stepW();
+        const delta  = Math.round((p.x - this._resizeDrag.startX) / sw);
+        this._resizeDrag.curDur = Math.max(1, this._resizeDrag.origDur + delta);
+        this.render();
+        return;
+      }
       if (!this._drag) return;
       const p  = this._relPos(e);
       const dx = Math.abs(p.x - this._drag.x);
@@ -126,7 +150,41 @@ class ScoreCanvas {
         this.render();
       }
     });
+
     this.canvas.addEventListener("mouseup", e => {
+      // ── リサイズ終了 ──
+      if (this._resizeDrag) {
+        const rd = this._resizeDrag;
+        const p  = this._relPos(e);
+        const dx = Math.abs(p.x - rd.startX);
+        this._resizeDrag = null;
+        document.body.style.cursor = "";
+
+        if (dx < 6) {
+          // ほぼ動かなかった → 通常クリック（選択/ダブルクリック）
+          const now = Date.now();
+          if (this._lastClickTime && now - this._lastClickTime < 300) {
+            clearTimeout(this._pendingClick);
+            this._pendingClick  = null;
+            this._lastClickTime = 0;
+            if (this.onInsert) this.onInsert(this.voice, rd.step);
+          } else {
+            this._lastClickTime = now;
+            const { step, pitch, origDur } = rd;
+            this._pendingClick = setTimeout(() => {
+              this._pendingClick = null;
+              if (this.onSelect) this.onSelect(this.voice, step, pitch, origDur, false);
+            }, 300);
+          }
+        } else if (rd.curDur !== rd.origDur) {
+          // 長さが変わった → リサイズ確定
+          if (this.onResize) this.onResize(this.voice, rd.step, rd.curDur);
+        }
+        this.render();
+        return;
+      }
+
+      // ── 既存のクリック/範囲選択 ──
       if (!this._drag) return;
       const p      = this._relPos(e);
       const dx     = Math.abs(p.x - this._drag.x);
@@ -235,8 +293,11 @@ class ScoreCanvas {
     for (const ev of this.events) {
       if (ev.step + ev.dur <= this.viewStart) continue;
       if (ev.step >= vEnd) continue;
-      if (ev.pitch === "R") this._drawRest(ev.step, ev.dur, stepW, x0);
-      else                  this._drawNote(ev.step, ev.dur, ev.pitch, stepW, x0);
+      // リサイズ中は仮の長さでプレビュー描画
+      const renderDur = (this._resizeDrag && ev.step === this._resizeDrag.step)
+        ? this._resizeDrag.curDur : ev.dur;
+      if (ev.pitch === "R") this._drawRest(ev.step, renderDur, stepW, x0);
+      else                  this._drawNote(ev.step, renderDur, ev.pitch, stepW, x0);
     }
 
   }
@@ -483,6 +544,7 @@ function createScorePanel(containerEl, callbacks) {
       onSelect:     callbacks.onSelect,
       onDragSelect: callbacks.onDragSelect,
       onInsert:     callbacks.onInsert,
+      onResize:     callbacks.onResize,
     });
     canvases[meta.voice] = sc;
   }
