@@ -11,7 +11,7 @@ const QUALITIES  = {"":" maj","m":"m","7":"7","maj7":"maj7","m7":"m7",
                     "dim":"dim","aug":"aug","sus4":"sus4"};
 const MAX_UNDO   = 50;
 
-const DUMMY_CHORDS  = ["C","F","G","C"];
+const DUMMY_CHORDS  = ["Dm","G","C","Am"];
 const DUMMY_MELODY_NOTES = ["C4","D4","E4","F4","G4","A4","B4","C5",
                              "D5","E5","F5","G5","A5","B5","C6","C5"];
 
@@ -797,6 +797,7 @@ function toggleHL() {
 
 window.addEventListener("DOMContentLoaded", async () => {
   buildChordSelectors();
+  syncChordUI();
   buildDurButtons();
   buildHLPanel();
   buildOLPanel();
@@ -808,14 +809,23 @@ window.addEventListener("DOMContentLoaded", async () => {
     onInsert:     onInsert,
   });
 
-  // ダミーデータ読み込み
-  const dummyMelSteps = [];
-  for (const n of DUMMY_MELODY_NOTES) {
-    dummyMelSteps.push(n,"blank","blank","blank");
-  }
-  state.voices["melody"] = stepsToEvents(dummyMelSteps);
+  // MIDIから読み込んだ主旋律を設定（16分音符ステップ解像度）
+  // 1小節目(steps 0-15): Dm上 — D5(付点四分=6), A4(八分=2), B4(八分=2), G5(付点四分=6)
+  // 2小節目(steps 16-31): C上  — A5(八分=2), G5(四分=4), A4(八分=2), B4(四分=4), G5(八分=2), C5(八分=2)
+  const midiMelSteps = Array(64).fill("blank");
+  midiMelSteps[0]  = "D5";
+  midiMelSteps[6]  = "A4";
+  midiMelSteps[8]  = "B4";
+  midiMelSteps[10] = "G5";
+  midiMelSteps[16] = "A5";
+  midiMelSteps[18] = "G5";
+  midiMelSteps[22] = "A4";
+  midiMelSteps[24] = "B4";
+  midiMelSteps[28] = "G5";
+  midiMelSteps[30] = "C5";
+  state.voices["melody"] = stepsToEvents(midiMelSteps);
   refreshVoice("melody");
-  document.getElementById("melody-input").value = DUMMY_MELODY_NOTES.join(" ");
+  document.getElementById("melody-input").value = "D5 A4 B4 G5 A5 G5 A4 B4 G5 C5";
 
   // ボタンイベント
   document.getElementById("btn-import").addEventListener("click", () =>
