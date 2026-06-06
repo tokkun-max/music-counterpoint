@@ -57,10 +57,11 @@ def export_csv(
 
 
 def chord_names_to_steps(chord_names: list[str]) -> list[str]:
-    """コード名リスト（4要素）を64要素のステップ列に展開する。"""
+    """コード名リスト（8要素）を64要素のステップ列に展開する（各スロット8ステップ）。"""
+    STEPS_PER_SLOT = 8
     steps: list[str] = []
     for chord in chord_names:
-        steps.extend([chord] * STEPS_PER_MEASURE)
+        steps.extend([chord] * STEPS_PER_SLOT)
     while len(steps) < STEPS:
         steps.append(steps[-1] if steps else "")
     return steps[:STEPS]

@@ -8,10 +8,11 @@ const VOICES     = ["melody","mid","bass_high","bass_low"];
 const V_LABELS   = { melody:"主旋律", mid:"中音域", bass_high:"低音域", bass_low:"超低音域" };
 const ROOTS      = ["C","C#","D","D#","E","F","F#","G","G#","A","A#","B"];
 const QUALITIES  = {"":" maj","m":"m","7":"7","maj7":"maj7","m7":"m7",
-                    "dim":"dim","aug":"aug","sus4":"sus4"};
+                    "dim":"dim","aug":"aug","sus4":"sus4","cont":"ー延長"};
 const MAX_UNDO   = 50;
 
-const DUMMY_CHORDS  = ["Dm","G","C","Am"];
+const CHORD_SLOT_LABELS = ["1-1","1-3","2-1","2-3","3-1","3-3","4-1","4-3"];
+const DUMMY_CHORDS  = ["Dm","G","C","Am","C","cont","Am","cont"];
 const DUMMY_MELODY_NOTES = ["C4","D4","E4","F4","G4","A4","B4","C5",
                              "D5","E5","F5","G5","A5","B5","C6","C5"];
 
@@ -546,7 +547,8 @@ async function apiFetch(url, body) {
 async function generateVoices() {
   showLoading(true);
   try {
-    const res  = await apiFetch("/api/generate", { chord_names: state.chords });
+    const resolved = resolveChords(state.chords);
+    const res  = await apiFetch("/api/generate", { chord_names: resolved });
     const data = await res.json();
     if (data.error) throw new Error(data.error);
 
@@ -561,7 +563,8 @@ async function generateVoices() {
       state.voices[v] = stepsToEvents(data[v] || []);
 
     refreshAll();
-    setStatus(`生成完了: ${state.chords.join(" / ")}`);
+    const label = state.chords.map(c => c === "cont" ? "ー" : c).join(" / ");
+    setStatus(`生成完了: ${label}`);
   } catch(e) {
     alert("生成エラー: " + e.message);
   } finally {
@@ -587,7 +590,7 @@ async function exportCsv() {
   try {
     const voices = {};
     for (const v of VOICES) voices[v] = eventsToExportSteps(state.voices[v]);
-    const res = await apiFetch("/api/export_csv", { chord_names: state.chords, voices });
+    const res = await apiFetch("/api/export_csv", { chord_names: resolveChords(state.chords), voices });
     const blob = await res.blob();
     downloadBlob(blob, "counterpoint.csv");
     setStatus("CSV出力完了");
@@ -604,7 +607,7 @@ async function importCsv(file) {
     const data = await res.json();
     if (data.error) throw new Error(data.error);
 
-    state.chords = data.chord_names.slice(0, 4);
+    state.chords = data.chord_names.slice(0, 8);
     for (const v of VOICES) state.voices[v] = stepsToEvents(data[v] || []);
     syncChordUI();
     refreshAll();
@@ -647,15 +650,21 @@ function setStatus(msg) {
 }
 
 function syncChordUI() {
-  for (let i = 0; i < 4; i++) {
+  for (let i = 0; i < 8; i++) {
     const chord = state.chords[i] || "C";
-    const root  = chord.match(/^([A-G][#b]?)/)?.[1] || "C";
-    const qual  = chord.slice(root.length);
     const row   = document.querySelectorAll(".chord-selector")[i];
     if (!row) continue;
     const [rootSel, qualSel] = row.querySelectorAll("select");
-    rootSel.value = ROOTS.includes(root) ? root : "C";
-    qualSel.value = qual || "";
+    if (chord === "cont") {
+      qualSel.value    = "cont";
+      rootSel.disabled = true;
+    } else {
+      const root = chord.match(/^([A-G][#b]?)/)?.[1] || "C";
+      const qual = chord.slice(root.length);
+      rootSel.value    = ROOTS.includes(root) ? root : "C";
+      qualSel.value    = qual || "";
+      rootSel.disabled = false;
+    }
   }
 }
 
@@ -663,8 +672,26 @@ function readChordUI() {
   state.chords = [];
   document.querySelectorAll(".chord-selector").forEach((row, i) => {
     const [rootSel, qualSel] = row.querySelectorAll("select");
-    state.chords.push(rootSel.value + qualSel.value);
+    if (qualSel.value === "cont") {
+      state.chords.push("cont");
+    } else {
+      state.chords.push(rootSel.value + qualSel.value);
+    }
   });
+}
+
+function resolveChords(chords) {
+  const resolved = [];
+  let prev = "C";
+  for (const c of chords) {
+    if (c === "cont") {
+      resolved.push(prev);
+    } else {
+      resolved.push(c);
+      prev = c;
+    }
+  }
+  return resolved;
 }
 
 // ═══════════════════════════════════════════════════════
@@ -674,25 +701,28 @@ function readChordUI() {
 function buildChordSelectors() {
   const container = document.getElementById("chord-selectors");
   container.innerHTML = "";
-  for (let i = 0; i < 4; i++) {
+  for (let i = 0; i < 8; i++) {
     const div = document.createElement("div");
     div.className = "chord-selector";
 
     const lbl = document.createElement("label");
-    lbl.textContent = `${i+1}小節`;
+    lbl.textContent = CHORD_SLOT_LABELS[i];
 
     const rootSel = document.createElement("select");
     for (const r of ROOTS) {
       const opt = document.createElement("option");
       opt.value = r; opt.textContent = r; rootSel.appendChild(opt);
     }
-    rootSel.value = DUMMY_CHORDS[i] || "C";
 
     const qualSel = document.createElement("select");
     for (const [val, lbl2] of Object.entries(QUALITIES)) {
       const opt = document.createElement("option");
       opt.value = val; opt.textContent = lbl2; qualSel.appendChild(opt);
     }
+
+    qualSel.addEventListener("change", () => {
+      rootSel.disabled = qualSel.value === "cont";
+    });
 
     div.appendChild(lbl);
     div.appendChild(rootSel);
