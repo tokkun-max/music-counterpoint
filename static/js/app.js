@@ -552,12 +552,15 @@ async function generateVoices() {
     const data = await res.json();
     if (data.error) throw new Error(data.error);
 
-    // melody: テキスト入力優先
-    const melText = document.getElementById("melody-input").value.trim();
-    if (melText) {
-      state.voices["melody"] = stepsToEvents(parseMelodyText(melText));
-    } else {
-      state.voices["melody"] = stepsToEvents(data["melody"] || []);
+    // melody: すでにイベントがある場合は保持（リズムを壊さない）
+    // 空の場合のみテキスト入力またはAPIから設定
+    if (state.voices["melody"].length === 0) {
+      const melText = document.getElementById("melody-input").value.trim();
+      if (melText) {
+        state.voices["melody"] = stepsToEvents(parseMelodyText(melText));
+      } else {
+        state.voices["melody"] = stepsToEvents(data["melody"] || []);
+      }
     }
     for (const v of ["mid","bass_high","bass_low"])
       state.voices[v] = stepsToEvents(data[v] || []);
@@ -855,7 +858,7 @@ window.addEventListener("DOMContentLoaded", async () => {
   midiMelSteps[30] = "C5";
   state.voices["melody"] = stepsToEvents(midiMelSteps);
   refreshVoice("melody");
-  document.getElementById("melody-input").value = "D5 A4 B4 G5 A5 G5 A4 B4 G5 C5";
+  document.getElementById("melody-input").value = "";
 
   // ボタンイベント
   document.getElementById("btn-import").addEventListener("click", () =>
