@@ -26,6 +26,7 @@ const state = {
   selVoice:     null,
   selSteps:     new Set(),
   selEv:        null,
+  insertMode:   false,
   hlActive:     false,
   hlVA:         "melody",
   hlVB:         "mid",
@@ -254,12 +255,12 @@ function onDragSelect(voice, selections) {
   updateEditorInfo();
 }
 
-// ダブルクリックで8分音符（2ステップ）を挿入
+// ダブルクリック: 八分音符挿入モードON時のみ空きに挿入
 function onInsert(voice, step) {
-  // すでに音符がある場合は挿入しない（選択のみ）
   const existing = findEventAt(state.voices[voice], step);
-  if (existing) {
-    onNoteSelect(voice, step, existing.pitch, existing.dur);
+  // 挿入モードOFF、または既存音符あり → 選択のみ
+  if (!state.insertMode || existing) {
+    if (existing) onNoteSelect(voice, step, existing.pitch, existing.dur);
     return;
   }
 
@@ -278,6 +279,20 @@ function onInsert(voice, step) {
   scorePanel.setSelected(voice, state.selSteps);
   updateEditorInfo();
   setStatus(`[${V_LABELS[voice]}] Step ${step} に 八分音符（${pitch}）を挿入しました`);
+}
+
+function toggleInsertMode() {
+  state.insertMode = !state.insertMode;
+  const btn = document.getElementById("insert-eighth-btn");
+  if (state.insertMode) {
+    btn.textContent = "♪ 八分音符挿入: ON";
+    btn.classList.replace("btn-insert-off", "btn-insert-on");
+    setStatus("八分音符挿入モード: ON — スコアの空きをダブルクリックして挿入。");
+  } else {
+    btn.textContent = "♪ 八分音符挿入: OFF";
+    btn.classList.replace("btn-insert-on", "btn-insert-off");
+    setStatus("八分音符挿入モード: OFF。");
+  }
 }
 
 function updateEditorInfo() {
@@ -553,14 +568,9 @@ async function generateVoices() {
     if (data.error) throw new Error(data.error);
 
     // melody: すでにイベントがある場合は保持（リズムを壊さない）
-    // 空の場合のみテキスト入力またはAPIから設定
+    // 空の場合のみAPIから設定
     if (state.voices["melody"].length === 0) {
-      const melText = document.getElementById("melody-input").value.trim();
-      if (melText) {
-        state.voices["melody"] = stepsToEvents(parseMelodyText(melText));
-      } else {
-        state.voices["melody"] = stepsToEvents(data["melody"] || []);
-      }
+      state.voices["melody"] = stepsToEvents(data["melody"] || []);
     }
     for (const v of ["mid","bass_high","bass_low"])
       state.voices[v] = stepsToEvents(data[v] || []);
@@ -858,7 +868,6 @@ window.addEventListener("DOMContentLoaded", async () => {
   midiMelSteps[30] = "C5";
   state.voices["melody"] = stepsToEvents(midiMelSteps);
   refreshVoice("melody");
-  document.getElementById("melody-input").value = "";
 
   // ボタンイベント
   document.getElementById("btn-import").addEventListener("click", () =>
@@ -890,6 +899,7 @@ window.addEventListener("DOMContentLoaded", async () => {
     }
   });
 
+  document.getElementById("insert-eighth-btn").addEventListener("click", toggleInsertMode);
   document.getElementById("hl-toggle-btn").addEventListener("click", toggleHL);
   document.getElementById("hl-apply-btn").addEventListener("click", () => {
     state.hlVA  = document.getElementById("hl-va").value;

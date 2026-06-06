@@ -31,12 +31,10 @@
   <div id="chord-selectors" style="display:flex; gap:8px;"></div>
 </div>
 
-<!-- ─── 主旋律 ─── -->
-<div class="panel">
-  <div class="panel-title">主旋律テキスト（音名 スペース区切り、例: E4 F4 G4 blank）</div>
-  <input type="text" id="melody-input"
-         style="width:100%; padding:5px 8px; border:1px solid #ccc; border-radius:4px;
-                font-family:monospace; font-size:12px;">
+<!-- ─── 八分音符挿入モード ─── -->
+<div class="panel" style="display:flex; align-items:center; gap:12px;">
+  <button id="insert-eighth-btn" class="btn btn-insert-off">♪ 八分音符挿入: OFF</button>
+  <span style="font-size:11px; color:#777;">ON にしてスコアをダブルクリック → 八分音符を挿入</span>
 </div>
 
 <!-- ─── 重複ハイライト ─── -->
