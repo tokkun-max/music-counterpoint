@@ -11,7 +11,7 @@ const QUALITIES  = {"":" maj","m":"m","7":"7","maj7":"maj7","m7":"m7",
                     "dim":"dim","aug":"aug","sus4":"sus4","cont":"ー延長"};
 const MAX_UNDO   = 50;
 
-const CHORD_SLOT_LABELS = ["1-1","1-3","2-1","2-3","3-1","3-3","4-1","4-3"];
+const CHORD_SLOT_LABELS = ["1.1","1.3","2.1","2.3","3.1","3.3","4.1","4.3"];
 const DUMMY_CHORDS  = ["Dm","G","C","Am","C","cont","Am","cont"];
 const DUMMY_MELODY_NOTES = ["C4","D4","E4","F4","G4","A4","B4","C5",
                              "D5","E5","F5","G5","A5","B5","C6","C5"];
