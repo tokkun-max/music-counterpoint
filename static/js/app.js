@@ -260,26 +260,23 @@ function onInsert(voice, step) {
   if (existing) onNoteSelect(voice, step, existing.pitch, existing.dur);
 }
 
-// ── ドラッグ挿入 ─────────────────────────────────────────────
-let _dragInsertType = null; // "note" | "rest"
+// ── カスタムドラッグ挿入（mousedown/move/up ベース） ──────────
+let _dragInsertType = null;
+let _dragGhost      = null;
+let _dragOverCanvas = null;
 
-function onScoreDrop(voice, step) {
-  if (!_dragInsertType) return;
-
-  // 2ステップ分（八分音符の長さ）が埋まっていたら挿入しない
+function _doInsert(voice, step, type) {
   if (findEventAt(state.voices[voice], step) ||
       findEventAt(state.voices[voice], step + 1)) {
     setStatus(`[${V_LABELS[voice]}] Step ${step} は埋まっているため挿入できません。`);
     return;
   }
-
-  const pitch = _dragInsertType === "rest" ? "R" : (() => {
+  const pitch = type === "rest" ? "R" : (() => {
     const prev = [...state.voices[voice]]
       .filter(ev => ev.step < step && ev.pitch !== "R")
       .sort((a, b) => b.step - a.step)[0];
     return prev ? prev.pitch : "C4";
   })();
-
   pushUndo();
   state.voices[voice] = insertOrReplace(state.voices[voice], step, pitch, 2);
   state.selVoice = voice;
@@ -288,8 +285,65 @@ function onScoreDrop(voice, step) {
   refreshVoice(voice);
   scorePanel.setSelected(voice, state.selSteps);
   updateEditorInfo();
-  const label = _dragInsertType === "rest" ? "八分休符" : `八分音符（${pitch}）`;
-  setStatus(`[${V_LABELS[voice]}] Step ${step} に ${label} を挿入しました`);
+  setStatus(`[${V_LABELS[voice]}] Step ${step} に ${type === "rest" ? "八分休符" : `八分音符（${pitch}）`} を挿入しました`);
+}
+
+function _startInsertDrag(type, startX, startY) {
+  _dragInsertType = type;
+
+  _dragGhost = document.createElement("span");
+  _dragGhost.textContent = type === "note" ? "♪" : "♩";
+  Object.assign(_dragGhost.style, {
+    position:      "fixed",
+    pointerEvents: "none",
+    zIndex:        "1000",
+    fontSize:      "18px",
+    background:    type === "note" ? "#2980b9" : "#7f8c8d",
+    color:         "#fff",
+    padding:       "3px 8px",
+    borderRadius:  "4px",
+    opacity:       "0.9",
+    userSelect:    "none",
+    left:          (startX + 14) + "px",
+    top:           (startY - 14) + "px",
+  });
+  document.body.appendChild(_dragGhost);
+
+  const onMove = e => {
+    _dragGhost.style.left = (e.clientX + 14) + "px";
+    _dragGhost.style.top  = (e.clientY - 14) + "px";
+    // ゴーストは pointer-events:none なので直下の canvas を検出できる
+    const el      = document.elementFromPoint(e.clientX, e.clientY);
+    const newOver = el?.classList.contains("voice-canvas") ? el : null;
+    if (_dragOverCanvas !== newOver) {
+      _dragOverCanvas?.classList.remove("drag-over");
+      _dragOverCanvas = newOver;
+      _dragOverCanvas?.classList.add("drag-over");
+    }
+  };
+
+  const onUp = e => {
+    document.removeEventListener("mousemove", onMove);
+    document.removeEventListener("mouseup",   onUp);
+    _dragGhost?.remove();      _dragGhost = null;
+    _dragOverCanvas?.classList.remove("drag-over"); _dragOverCanvas = null;
+
+    const el = document.elementFromPoint(e.clientX, e.clientY);
+    if (el?.classList.contains("voice-canvas")) {
+      const entry = Object.entries(scorePanel.canvases)
+        .find(([, sc]) => sc.canvas === el);
+      if (entry) {
+        const [voice, sc] = entry;
+        const rect = el.getBoundingClientRect();
+        const step = sc._xToStep(e.clientX - rect.left);
+        _doInsert(voice, step, type);
+      }
+    }
+    _dragInsertType = null;
+  };
+
+  document.addEventListener("mousemove", onMove);
+  document.addEventListener("mouseup",   onUp);
 }
 
 function updateEditorInfo() {
@@ -847,7 +901,6 @@ window.addEventListener("DOMContentLoaded", async () => {
     onSelect:     onNoteSelect,
     onDragSelect: onDragSelect,
     onInsert:     onInsert,
-    onDrop:       onScoreDrop,
   });
 
   // MIDIから読み込んだ主旋律を設定（16分音符ステップ解像度）
@@ -897,18 +950,15 @@ window.addEventListener("DOMContentLoaded", async () => {
     }
   });
 
-  // ドラッグ挿入ボタン
-  document.getElementById("insert-note-btn").addEventListener("dragstart", e => {
-    _dragInsertType = "note";
-    e.dataTransfer.setData("text/plain", "note");
-    e.dataTransfer.effectAllowed = "copy";
+  // ドラッグ挿入ボタン（mousedown でカスタムドラッグ開始）
+  document.getElementById("insert-note-btn").addEventListener("mousedown", e => {
+    e.preventDefault();
+    _startInsertDrag("note", e.clientX, e.clientY);
   });
-  document.getElementById("insert-rest-btn").addEventListener("dragstart", e => {
-    _dragInsertType = "rest";
-    e.dataTransfer.setData("text/plain", "rest");
-    e.dataTransfer.effectAllowed = "copy";
+  document.getElementById("insert-rest-btn").addEventListener("mousedown", e => {
+    e.preventDefault();
+    _startInsertDrag("rest", e.clientX, e.clientY);
   });
-  document.addEventListener("dragend", () => { _dragInsertType = null; });
 
   document.getElementById("hl-toggle-btn").addEventListener("click", toggleHL);
   document.getElementById("hl-apply-btn").addEventListener("click", () => {
