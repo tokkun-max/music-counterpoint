@@ -953,7 +953,7 @@ function initKeyBindings() {
   document.addEventListener("keydown", e => {
     if (e.key === "t" || e.key === "T") {
       const tag = document.activeElement?.tagName;
-      if (tag !== "INPUT" && tag !== "TEXTAREA") insertMode = true;
+      if (tag !== "INPUT" && tag !== "TEXTAREA" && tag !== "SELECT") insertMode = true;
     }
   });
   document.addEventListener("keyup", e => {
@@ -1064,6 +1064,7 @@ window.addEventListener("DOMContentLoaded", async () => {
   });
   document.getElementById("btn-generate").addEventListener("click", () => {
     readChordUI(); generateVoices();
+    document.activeElement?.blur();  // ボタンからフォーカスを外してCanvas操作を有効にする
   });
   document.getElementById("btn-midi").addEventListener("click", exportMidi);
   document.getElementById("btn-csv").addEventListener("click", exportCsv);
