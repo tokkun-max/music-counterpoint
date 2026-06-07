@@ -481,6 +481,32 @@ function undo() {
 //  音符編集
 // ═══════════════════════════════════════════════════════
 
+function halveSel() {
+  if (!state.selVoice || !state.selSteps.size) return;
+
+  const MIN_DUR = 1;  // 1 step = 十六分音符 が最小単位
+  const evs = state.voices[state.selVoice];
+
+  // 変更可能な音符が1つでもあるか事前確認
+  const hasTarget = evs.some(ev =>
+    state.selSteps.has(ev.step) && Math.floor(ev.dur / 2) >= MIN_DUR
+  );
+  if (!hasTarget) { setStatus("選択中の音符はすでに最小長さです。"); return; }
+
+  pushUndo();
+
+  for (const ev of evs) {
+    if (!state.selSteps.has(ev.step)) continue;
+    const newDur = Math.floor(ev.dur / 2);
+    if (newDur < MIN_DUR) continue;  // 十六分音符以下はスキップ
+    ev.dur = newDur;
+  }
+
+  refreshVoice(state.selVoice);
+  updateEditorInfo();
+  setStatus("選択中の音符を半分の長さにしました。Ctrl+Z で元に戻せます。");
+}
+
 function shiftPitchSel(semis) {
   if (!state.selVoice || !state.selSteps.size) return;
   pushUndo();
@@ -981,6 +1007,7 @@ function initKeyBindings() {
     if (e.key === "ArrowRight"){ e.preventDefault(); navigate(+1); return; }
     if (e.key === "+" || e.key === "=") { e.preventDefault(); cycleDur(+1); return; }
     if (e.key === "-")         { e.preventDefault(); cycleDur(-1); return; }
+    if (e.key === "h" || e.key === "H") { e.preventDefault(); halveSel(); return; }
     if (e.key === "0")         { e.preventDefault(); toggleRest();  return; }
     if (e.key === "Delete")    { e.preventDefault(); deleteSel();   return; }
     if (e.ctrlKey && e.key.toLowerCase() === "z") { e.preventDefault(); undo(); return; }
