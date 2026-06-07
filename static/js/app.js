@@ -283,13 +283,30 @@ function onDragSelect(voice, selections) {
   updateEditorInfo();
 }
 
-// ダブルクリック: T キー押下中かつ空白なら8分音符挿入、それ以外は既存音符を選択
+// ダブルクリック: T キー押下中なら既存音符の有無に関わらず8分音符を強制挿入
+// （自動生成後のように全ステップが埋まっている場合も insertOrReplace でスプリット）
 function onInsert(voice, step) {
-  const existing = findEventAt(state.voices[voice], step);
   if (insertMode) {
-    if (!existing) _doInsert(voice, step, "note");
-    // 音符がある位置は何もしない
+    // 分割元の音符ピッチを優先し、なければ直前音、それもなければ C4
+    const existing = findEventAt(state.voices[voice], step);
+    const pitch = (() => {
+      if (existing && existing.pitch !== "R") return existing.pitch;
+      const prev = [...state.voices[voice]]
+        .filter(ev => ev.step < step && ev.pitch !== "R")
+        .sort((a, b) => b.step - a.step)[0];
+      return prev ? prev.pitch : "C4";
+    })();
+    pushUndo();
+    state.voices[voice] = insertOrReplace(state.voices[voice], step, pitch, 2);
+    state.selVoice = voice;
+    state.selEv    = findEventAt(state.voices[voice], step);
+    state.selSteps = state.selEv ? new Set([state.selEv.step]) : new Set();
+    refreshVoice(voice);
+    scorePanel.setSelected(voice, state.selSteps);
+    updateEditorInfo();
+    setStatus(`[${V_LABELS[voice]}] Step ${step} に八分音符（${pitch}）を挿入しました`);
   } else {
+    const existing = findEventAt(state.voices[voice], step);
     if (existing) onNoteSelect(voice, step, existing.pitch, existing.dur);
   }
 }
