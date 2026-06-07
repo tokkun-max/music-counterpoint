@@ -11,13 +11,15 @@
 <!-- ローディング -->
 <div id="loading">読み込み中…</div>
 
-<!-- CSV ファイル入力（非表示） -->
-<input type="file" id="csv-file-input" accept=".csv">
+<!-- ファイル入力（非表示） -->
+<input type="file" id="csv-file-input"  accept=".csv">
+<input type="file" id="midi-file-input" accept=".mid,.midi">
 
 <!-- ─── トップバー ─── -->
 <div id="topbar">
   <h1>対旋律作成ツール</h1>
-  <button id="btn-import"   class="btn btn-blue"  >CSVインポート</button>
+  <button id="btn-import"       class="btn btn-blue"  >CSVインポート</button>
+  <button id="btn-import-midi"  class="btn btn-indigo">MIDIインポート</button>
   <button id="btn-new"      class="btn btn-gray"  >新規作成</button>
   <button id="btn-generate" class="btn btn-green" >対旋律を自動生成</button>
   <button id="btn-midi"     class="btn btn-purple">MIDI出力</button>

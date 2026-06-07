@@ -144,6 +144,69 @@ def _parse_csv(filepath: str) -> dict | None:
     }
 
 
+@app.route("/api/import_midi", methods=["POST"])
+def api_import_midi():
+    if "file" not in request.files:
+        return jsonify({"error": "ファイルがありません"}), 400
+    file = request.files["file"]
+    fd, path = tempfile.mkstemp(suffix=".mid")
+    os.close(fd)
+    try:
+        file.save(path)
+        result = _parse_midi(path)
+        if result is None:
+            return jsonify({"error": "MIDIファイルの解析に失敗しました"}), 400
+        return jsonify(result)
+    except Exception as e:
+        traceback.print_exc()
+        return jsonify({"error": str(e)}), 500
+    finally:
+        try:
+            os.unlink(path)
+        except Exception:
+            pass
+
+
+def _parse_midi(filepath: str) -> dict | None:
+    """
+    music21 で MIDI を解析し 4 声部 64 ステップ列辞書を返す。
+    トラック順: melody / mid / bass_high / bass_low
+    1 ステップ = 16 分音符 (offset × 4)
+    """
+    try:
+        from music21 import converter
+        from music21 import chord as m21chord
+        score = converter.parse(filepath)
+        parts = list(score.parts)
+    except Exception:
+        return None
+
+    STEPS = 64
+    SPB = 4  # steps per beat (16分音符 = 1 step)
+    voice_keys = ["melody", "mid", "bass_high", "bass_low"]
+    result: dict[str, list[str]] = {}
+
+    for i, vk in enumerate(voice_keys):
+        steps = ["blank"] * STEPS
+        if i < len(parts):
+            for el in parts[i].flatten().notes:
+                step = int(round(float(el.offset) * SPB))
+                if not (0 <= step < STEPS):
+                    continue
+                if isinstance(el, m21chord.Chord):
+                    # 和音は最高音を使用
+                    pitch = max(el.pitches, key=lambda p: p.midi)
+                    name = pitch.nameWithOctave
+                else:
+                    name = el.nameWithOctave
+                # music21 のフラット記号 "E-4" → "Eb4" に正規化
+                name = name.replace("-", "b")
+                steps[step] = name
+        result[vk] = steps
+
+    return result
+
+
 if __name__ == "__main__":
     print("http://localhost:5000 を開いてください")
     port = int(os.environ.get("PORT", 5000))

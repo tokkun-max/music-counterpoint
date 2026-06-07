@@ -743,6 +743,22 @@ async function importCsv(file) {
   finally { showLoading(false); }
 }
 
+async function importMidi(file) {
+  const fd = new FormData();
+  fd.append("file", file);
+  showLoading(true);
+  try {
+    const res  = await fetch("/api/import_midi", { method: "POST", body: fd });
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
+
+    for (const v of VOICES) state.voices[v] = stepsToEvents(data[v] || []);
+    refreshAll();
+    setStatus("MIDIインポート完了。コード進行を確認・設定してください。");
+  } catch(e) { alert("MIDIインポートエラー: " + e.message); }
+  finally { showLoading(false); }
+}
+
 // ═══════════════════════════════════════════════════════
 //  ユーティリティ
 // ═══════════════════════════════════════════════════════
@@ -1000,6 +1016,12 @@ window.addEventListener("DOMContentLoaded", async () => {
     document.getElementById("csv-file-input").click());
   document.getElementById("csv-file-input").addEventListener("change", e => {
     if (e.target.files[0]) { importCsv(e.target.files[0]); e.target.value = ""; }
+  });
+
+  document.getElementById("btn-import-midi").addEventListener("click", () =>
+    document.getElementById("midi-file-input").click());
+  document.getElementById("midi-file-input").addEventListener("change", e => {
+    if (e.target.files[0]) { importMidi(e.target.files[0]); e.target.value = ""; }
   });
   document.getElementById("btn-new").addEventListener("click", () => {
     for (const v of VOICES) state.voices[v] = [];
