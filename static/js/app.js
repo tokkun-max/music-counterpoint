@@ -31,6 +31,10 @@ const state = {
   hlVB:         "mid",
   hlDeg:        3,
   hlIndices:    [],
+  hlVA2:        "melody",
+  hlVB2:        "mid",
+  hlDeg2:       5,
+  hlIndices2:   [],
   olVA:         "melody",
   olVB:         "mid",
   olIndices:    [],
@@ -191,9 +195,10 @@ function buildOLPanel() {
 }
 
 function refreshVoice(voice) {
-  const hlIdx = (state.hlVA === voice || state.hlVB === voice) ? state.hlIndices : [];
-  const olIdx = (state.olVA === voice || state.olVB === voice) ? state.olIndices : [];
-  scorePanel.update(voice, state.voices[voice], hlIdx, state.selSteps, new Set(olIdx));
+  const hlIdx  = (state.hlVA  === voice || state.hlVB  === voice) ? state.hlIndices  : [];
+  const hlIdx2 = (state.hlVA2 === voice || state.hlVB2 === voice) ? state.hlIndices2 : [];
+  const olIdx  = (state.olVA  === voice || state.olVB  === voice) ? state.olIndices  : [];
+  scorePanel.update(voice, state.voices[voice], hlIdx, hlIdx2, state.selSteps, new Set(olIdx));
   if (state.selVoice === voice) scorePanel.setSelected(voice, state.selSteps);
 }
 
@@ -588,16 +593,31 @@ function applyHL() {
   const stepsB = eventsToSoundingSteps(state.voices[state.hlVB]);
   state.hlIndices = findIntervalIndices(stepsA, stepsB, state.hlDeg);
   for (const v of VOICES) refreshVoice(v);
-  setStatus(`${state.hlDeg}度: ${state.hlIndices.length} 箇所ハイライト`);
+  setStatus(`HL1(ピンク) ${state.hlDeg}度: ${state.hlIndices.length}箇所`);
+}
+
+function applyHL2() {
+  const stepsA = eventsToSoundingSteps(state.voices[state.hlVA2]);
+  const stepsB = eventsToSoundingSteps(state.voices[state.hlVB2]);
+  state.hlIndices2 = findIntervalIndices(stepsA, stepsB, state.hlDeg2);
+  for (const v of VOICES) refreshVoice(v);
+  setStatus(`HL2(ブルー) ${state.hlDeg2}度: ${state.hlIndices2.length}箇所`);
 }
 
 function clearHL() {
   state.hlIndices = [];
   for (const v of VOICES) refreshVoice(v);
+  setStatus("HL1 クリアしました。");
+}
+
+function clearHL2() {
+  state.hlIndices2 = [];
+  for (const v of VOICES) refreshVoice(v);
+  setStatus("HL2 クリアしました。");
 }
 
 function selectHLVoice(voice) {
-  if (!state.hlIndices.length) { setStatus("先にハイライトを適用してください。"); return; }
+  if (!state.hlIndices.length) { setStatus("先にHL1のハイライトを適用してください。"); return; }
   const hlSet = new Set(state.hlIndices);
   const matched = state.voices[voice].filter(ev => {
     if (ev.pitch === "R") return false;
@@ -606,7 +626,7 @@ function selectHLVoice(voice) {
     }
     return false;
   });
-  if (!matched.length) { setStatus(`[${V_LABELS[voice]}] ハイライト音符なし`); return; }
+  if (!matched.length) { setStatus(`[${V_LABELS[voice]}] HL1ハイライト音符なし`); return; }
   state.selVoice = voice;
   state.selSteps = new Set(matched.map(ev => ev.step));
   state.selEv    = matched[0];
@@ -614,6 +634,26 @@ function selectHLVoice(voice) {
   scorePanel.setSelected(voice, state.selSteps);
   updateEditorInfo();
   setStatus(`[${V_LABELS[voice]}] ${matched.length}音を一括選択しました。`);
+}
+
+function selectHLVoice2(voice) {
+  if (!state.hlIndices2.length) { setStatus("先にHL2のハイライトを適用してください。"); return; }
+  const hlSet = new Set(state.hlIndices2);
+  const matched = state.voices[voice].filter(ev => {
+    if (ev.pitch === "R") return false;
+    for (let s = ev.step; s < ev.step + ev.dur; s++) {
+      if (hlSet.has(s)) return true;
+    }
+    return false;
+  });
+  if (!matched.length) { setStatus(`[${V_LABELS[voice]}] HL2ハイライト音符なし`); return; }
+  state.selVoice = voice;
+  state.selSteps = new Set(matched.map(ev => ev.step));
+  state.selEv    = matched[0];
+  scorePanel.clearSelected();
+  scorePanel.setSelected(voice, state.selSteps);
+  updateEditorInfo();
+  setStatus(`[${V_LABELS[voice]}] ${matched.length}音を一括選択しました（HL2）。`);
 }
 
 // ═══════════════════════════════════════════════════════
@@ -834,28 +874,39 @@ function buildDurButtons() {
 }
 
 function buildHLPanel() {
-  const vaEl  = document.getElementById("hl-va");
-  const vbEl  = document.getElementById("hl-vb");
-  const degEl = document.getElementById("hl-deg");
+  const vaEl   = document.getElementById("hl-va");
+  const vbEl   = document.getElementById("hl-vb");
+  const degEl  = document.getElementById("hl-deg");
+  const vaEl2  = document.getElementById("hl-va2");
+  const vbEl2  = document.getElementById("hl-vb2");
+  const degEl2 = document.getElementById("hl-deg2");
 
   for (const v of VOICES) {
-    [vaEl, vbEl].forEach(sel => {
+    [vaEl, vbEl, vaEl2, vbEl2].forEach(sel => {
       const opt = document.createElement("option");
       opt.value = v; opt.textContent = V_LABELS[v]; sel.appendChild(opt);
     });
   }
   vaEl.value  = "melody";
   vbEl.value  = "mid";
+  vaEl2.value = "melody";
+  vbEl2.value = "mid";
 
   for (let d = 1; d <= 7; d++) {
-    const opt = document.createElement("option");
-    opt.value = d; opt.textContent = d; degEl.appendChild(opt);
+    [degEl, degEl2].forEach(sel => {
+      const opt = document.createElement("option");
+      opt.value = d; opt.textContent = d; sel.appendChild(opt);
+    });
   }
-  degEl.value = "3";
+  degEl.value  = "3";
+  degEl2.value = "5";
 
-  vaEl .addEventListener("change", () => { state.hlVA  = vaEl.value; });
-  vbEl .addEventListener("change", () => { state.hlVB  = vbEl.value; });
-  degEl.addEventListener("change", () => { state.hlDeg = parseInt(degEl.value); });
+  vaEl  .addEventListener("change", () => { state.hlVA   = vaEl.value; });
+  vbEl  .addEventListener("change", () => { state.hlVB   = vbEl.value; });
+  degEl .addEventListener("change", () => { state.hlDeg  = parseInt(degEl.value); });
+  vaEl2 .addEventListener("change", () => { state.hlVA2  = vaEl2.value; });
+  vbEl2 .addEventListener("change", () => { state.hlVB2  = vbEl2.value; });
+  degEl2.addEventListener("change", () => { state.hlDeg2 = parseInt(degEl2.value); });
 }
 
 function initKeyBindings() {
@@ -994,6 +1045,16 @@ window.addEventListener("DOMContentLoaded", async () => {
   document.getElementById("hl-clear-btn").addEventListener("click", clearHL);
   document.getElementById("hl-select-a-btn").addEventListener("click", () => selectHLVoice(state.hlVA));
   document.getElementById("hl-select-b-btn").addEventListener("click", () => selectHLVoice(state.hlVB));
+
+  document.getElementById("hl-apply-btn2").addEventListener("click", () => {
+    state.hlVA2  = document.getElementById("hl-va2").value;
+    state.hlVB2  = document.getElementById("hl-vb2").value;
+    state.hlDeg2 = parseInt(document.getElementById("hl-deg2").value);
+    applyHL2();
+  });
+  document.getElementById("hl-clear-btn2").addEventListener("click", clearHL2);
+  document.getElementById("hl-select-a-btn2").addEventListener("click", () => selectHLVoice2(state.hlVA2));
+  document.getElementById("hl-select-b-btn2").addEventListener("click", () => selectHLVoice2(state.hlVB2));
 
   document.getElementById("ol-apply-btn").addEventListener("click", () => {
     state.olVA = document.getElementById("ol-va").value;

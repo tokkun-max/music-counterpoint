@@ -19,7 +19,9 @@ const C = {
   noteFill:    "#111",
   noteOpen:    "#ffffff",
   stem:        "#111",
-  hlFill:      "#ffe066",
+  hlFill:      "rgba(224, 80, 122, 0.22)",   // HL1 ピンク
+  hlFill2:     "rgba(52, 152, 219, 0.22)",    // HL2 ブルー
+  hlFillBoth:  "rgba(160, 60, 200, 0.25)",    // HL1+HL2 重複 パープル
   overlapFill: "rgba(57, 255, 20, 0.28)",
   selBorder:   "#3498db",
   rest:        "#555",
@@ -54,6 +56,7 @@ class ScoreCanvas {
     this.clef     = clef;
     this.events   = [];
     this.hlSteps      = new Set();
+    this.hlSteps2     = new Set();
     this.selSteps     = new Set();
     this.overlapSteps = new Set();
     this.playStep = null;
@@ -77,9 +80,10 @@ class ScoreCanvas {
   }
 
   // ── 公開 API ──────────────────────────────────────
-  setEvents(events, hlSteps = [], selSteps = new Set(), overlapSteps = new Set()) {
+  setEvents(events, hlSteps = [], hlSteps2 = [], selSteps = new Set(), overlapSteps = new Set()) {
     this.events       = events || [];
     this.hlSteps      = new Set(hlSteps);
+    this.hlSteps2     = new Set(hlSteps2);
     this.selSteps     = selSteps;
     this.overlapSteps = overlapSteps;
     this.render();
@@ -336,6 +340,7 @@ class ScoreCanvas {
     const isHalf   = dur >= 8 && !isWhole;  // 2分音符のみ中抜き（全音符は別処理）
     const isHollow = dur >= 8;              // 全音符・2分音符は中抜き
     const isHL     = [...this.hlSteps].some(s => s >= stepI && s < stepI + dur);
+    const isHL2    = [...this.hlSteps2].some(s => s >= stepI && s < stepI + dur);
     const isSel    = this.selSteps.has(stepI);
     const multiSel = this.selSteps.size > 1;
 
@@ -344,9 +349,15 @@ class ScoreCanvas {
       ctx.fillStyle = C.overlapFill;
       ctx.fillRect(x0 + (stepI - this.viewStart) * stepW, MARGIN_TOP, dur * stepW, STAFF_H);
     }
-    // HL 背景（黄）
-    if (isHL) {
+    // HL1(ピンク) / HL2(ブルー) / 両方(パープル) 背景
+    if (isHL && isHL2) {
+      ctx.fillStyle = C.hlFillBoth;
+      ctx.fillRect(x0 + (stepI - this.viewStart) * stepW, MARGIN_TOP, dur * stepW, STAFF_H);
+    } else if (isHL) {
       ctx.fillStyle = C.hlFill;
+      ctx.fillRect(x0 + (stepI - this.viewStart) * stepW, MARGIN_TOP, dur * stepW, STAFF_H);
+    } else if (isHL2) {
+      ctx.fillStyle = C.hlFill2;
       ctx.fillRect(x0 + (stepI - this.viewStart) * stepW, MARGIN_TOP, dur * stepW, STAFF_H);
     }
 
@@ -561,8 +572,8 @@ function createScorePanel(containerEl, callbacks) {
 
   return {
     canvases,
-    update(voice, events, hlSteps, selSteps, overlapSteps = new Set()) {
-      if (canvases[voice]) canvases[voice].setEvents(events, hlSteps, selSteps, overlapSteps);
+    update(voice, events, hlSteps, hlSteps2, selSteps, overlapSteps = new Set()) {
+      if (canvases[voice]) canvases[voice].setEvents(events, hlSteps, hlSteps2, selSteps, overlapSteps);
     },
     setPlayStep(step) {
       for (const sc of Object.values(canvases)) sc.setPlayStep(step);

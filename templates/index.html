@@ -55,18 +55,35 @@
 <!-- ─── 度数ハイライト ─── -->
 <div class="panel" id="hl-panel">
   <div class="panel-title" style="display:inline;">度数ハイライト</div>
-  <div style="display:flex; align-items:center; gap:8px; margin-top:5px; flex-wrap:wrap;">
+  <!-- HL1 ピンク -->
+  <div style="display:flex; align-items:center; gap:8px; margin-top:6px; flex-wrap:wrap;">
     <button id="hl-toggle-btn" class="btn btn-hl-off" style="width:72px;">HL: OFF</button>
+    <span style="background:#ffd6e0; border:1px solid #e0507a; color:#c0305a; padding:2px 8px; border-radius:3px; font-size:11px; font-weight:bold;">HL1●</span>
     <label>声部A:</label>
     <select id="hl-va"></select>
     <label>声部B:</label>
     <select id="hl-vb"></select>
     <label>度数:</label>
     <select id="hl-deg" style="width:50px;"></select>
-    <button id="hl-apply-btn"    class="btn btn-blue"   style="padding:4px 12px;">ハイライト</button>
+    <button id="hl-apply-btn"    class="btn btn-pink"   style="padding:4px 12px;">ハイライト</button>
     <button id="hl-clear-btn"    class="btn btn-gray"   style="padding:4px 10px;">クリア</button>
     <button id="hl-select-a-btn" class="btn btn-orange" style="padding:4px 10px;">声部A 一括選択</button>
     <button id="hl-select-b-btn" class="btn btn-orange" style="padding:4px 10px;">声部B 一括選択</button>
+  </div>
+  <!-- HL2 ブルー -->
+  <div style="display:flex; align-items:center; gap:8px; margin-top:5px; flex-wrap:wrap;">
+    <div style="width:72px;"></div>
+    <span style="background:#d6eaff; border:1px solid #3498db; color:#1a70b8; padding:2px 8px; border-radius:3px; font-size:11px; font-weight:bold;">HL2●</span>
+    <label>声部A:</label>
+    <select id="hl-va2"></select>
+    <label>声部B:</label>
+    <select id="hl-vb2"></select>
+    <label>度数:</label>
+    <select id="hl-deg2" style="width:50px;"></select>
+    <button id="hl-apply-btn2"    class="btn btn-blue"   style="padding:4px 12px;">ハイライト</button>
+    <button id="hl-clear-btn2"    class="btn btn-gray"   style="padding:4px 10px;">クリア</button>
+    <button id="hl-select-a-btn2" class="btn btn-orange" style="padding:4px 10px;">声部A 一括選択</button>
+    <button id="hl-select-b-btn2" class="btn btn-orange" style="padding:4px 10px;">声部B 一括選択</button>
   </div>
 </div>
 

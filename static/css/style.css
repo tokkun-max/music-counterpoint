@@ -37,6 +37,7 @@ body {
 .btn:disabled { opacity: .45; cursor: default; }
 
 .btn-blue   { background: #3498db; }
+.btn-pink   { background: #e0507a; }
 .btn-green  { background: #27ae60; }
 .btn-purple { background: #8e44ad; }
 .btn-orange { background: #e67e22; }
