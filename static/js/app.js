@@ -159,7 +159,8 @@ function stopPlayback() {
 //  スコアパネル
 // ═══════════════════════════════════════════════════════
 
-let scorePanel = null;
+let scorePanel  = null;
+let insertMode  = false;  // T キー押下中: ダブルクリックで8分音符挿入
 
 function applyOL() {
   const onsetsA = new Set(
@@ -282,10 +283,15 @@ function onDragSelect(voice, selections) {
   updateEditorInfo();
 }
 
-// ダブルクリック: 既存音符の選択のみ（挿入はドラッグで行う）
+// ダブルクリック: T キー押下中かつ空白なら8分音符挿入、それ以外は既存音符を選択
 function onInsert(voice, step) {
   const existing = findEventAt(state.voices[voice], step);
-  if (existing) onNoteSelect(voice, step, existing.pitch, existing.dur);
+  if (insertMode) {
+    if (!existing) _doInsert(voice, step, "note");
+    // 音符がある位置は何もしない
+  } else {
+    if (existing) onNoteSelect(voice, step, existing.pitch, existing.dur);
+  }
 }
 
 // ── カスタムドラッグ挿入（mousedown/move/up ベース） ──────────
@@ -926,6 +932,17 @@ function buildHLPanel() {
 }
 
 function initKeyBindings() {
+  // T キー: 押している間だけ insertMode=true（ダブルクリック挿入モード）
+  document.addEventListener("keydown", e => {
+    if (e.key === "t" || e.key === "T") {
+      const tag = document.activeElement?.tagName;
+      if (tag !== "INPUT" && tag !== "TEXTAREA") insertMode = true;
+    }
+  });
+  document.addEventListener("keyup", e => {
+    if (e.key === "t" || e.key === "T") insertMode = false;
+  });
+
   document.addEventListener("keydown", e => {
     // テキスト入力中はスキップ（HL ON の場合の select も）
     const tag = document.activeElement?.tagName;
