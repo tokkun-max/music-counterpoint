@@ -42,6 +42,7 @@ const state = {
   undoStack:    [],
   isPlaying:    false,
   playStep:     null,
+  mutedVoices:  new Set(),
 };
 
 // ═══════════════════════════════════════════════════════
@@ -95,6 +96,7 @@ async function startPlayback() {
 
   // 全声部のノートをスケジュール
   for (const voice of VOICES) {
+    if (state.mutedVoices.has(voice)) continue;
     const steps  = eventsToExportSteps(state.voices[voice]);
     const active = { note: null };
 
@@ -508,6 +510,20 @@ function halveSel() {
   refreshVoice(state.selVoice);
   updateEditorInfo();
   setStatus("選択中の音符を半分の長さにしました。Ctrl+Z で元に戻せます。");
+}
+
+function toggleMute(voice) {
+  if (state.mutedVoices.has(voice)) {
+    state.mutedVoices.delete(voice);
+  } else {
+    state.mutedVoices.add(voice);
+  }
+  const btn = document.getElementById(`mute-btn-${voice}`);
+  if (btn) {
+    const muted = state.mutedVoices.has(voice);
+    btn.classList.toggle("btn-muted", muted);
+    btn.textContent = (muted ? "🔇 " : "🔊 ") + V_LABELS[voice];
+  }
 }
 
 function shiftPitchSel(semis) {

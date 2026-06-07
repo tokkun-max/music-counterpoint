@@ -51,6 +51,9 @@ body {
 .btn-insert-rest { background: #7f8c8d; cursor: grab; }
 .btn-insert-note:active, .btn-insert-rest:active { cursor: grabbing; }
 .voice-canvas.drag-over { outline: 2px solid #2980b9; outline-offset: -2px; }
+.btn-mute  { background: #e0e0e0; color: #333; font-size: 13px; padding: 4px 10px; border-radius: 4px; border: 1px solid #aaa; cursor: pointer; transition: opacity .15s; }
+.btn-mute:hover { opacity: .85; }
+.btn-muted { background: #888; color: #fff; border-color: #666; }
 
 /* ─── パネル共通 ─── */
 .panel {

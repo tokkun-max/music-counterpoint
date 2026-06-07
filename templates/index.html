@@ -89,6 +89,15 @@
   </div>
 </div>
 
+<!-- ─── ミュート ─── -->
+<div class="panel" style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+  <span style="font-size:11px; font-weight:bold; color:#555; white-space:nowrap;">ミュート:</span>
+  <button id="mute-btn-melody"    class="btn btn-mute" onclick="toggleMute('melody')"   >🔊 主旋律</button>
+  <button id="mute-btn-mid"       class="btn btn-mute" onclick="toggleMute('mid')"      >🔊 中音域</button>
+  <button id="mute-btn-bass_high" class="btn btn-mute" onclick="toggleMute('bass_high')">🔊 低音域</button>
+  <button id="mute-btn-bass_low"  class="btn btn-mute" onclick="toggleMute('bass_low')" >🔊 超低音域</button>
+</div>
+
 <!-- ─── スコアエリア ─── -->
 <div id="score-area"></div>
 
