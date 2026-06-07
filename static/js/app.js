@@ -484,12 +484,17 @@ function undo() {
 function halveSel() {
   if (!state.selVoice || !state.selSteps.size) return;
 
-  const MIN_DUR = 1;  // 1 step = 十六分音符 が最小単位
+  // DUR_ORDER の1つ前の音価を返す（十六分音符=1 より短くはしない）
+  function halvedDur(dur) {
+    const idx = DUR_ORDER.indexOf(dur);
+    if (idx <= 0) return dur;
+    return DUR_ORDER[idx - 1];
+  }
+
   const evs = state.voices[state.selVoice];
 
-  // 変更可能な音符が1つでもあるか事前確認
   const hasTarget = evs.some(ev =>
-    state.selSteps.has(ev.step) && Math.floor(ev.dur / 2) >= MIN_DUR
+    state.selSteps.has(ev.step) && DUR_ORDER.indexOf(ev.dur) > 0
   );
   if (!hasTarget) { setStatus("選択中の音符はすでに最小長さです。"); return; }
 
@@ -497,9 +502,7 @@ function halveSel() {
 
   for (const ev of evs) {
     if (!state.selSteps.has(ev.step)) continue;
-    const newDur = Math.floor(ev.dur / 2);
-    if (newDur < MIN_DUR) continue;  // 十六分音符以下はスキップ
-    ev.dur = newDur;
+    ev.dur = halvedDur(ev.dur);
   }
 
   refreshVoice(state.selVoice);
