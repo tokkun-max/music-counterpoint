@@ -290,7 +290,7 @@ function onDragSelect(voice, selections) {
 function onInsert(voice, step) {
   if (insertMode) {
     pushUndo();
-    state.voices[voice] = insertOrReplace(state.voices[voice], step, "R", 2);
+    state.voices[voice] = insertShift(state.voices[voice], step, "R", 2);
     state.selVoice = voice;
     state.selEv    = findEventAt(state.voices[voice], step);
     state.selSteps = state.selEv ? new Set([state.selEv.step]) : new Set();

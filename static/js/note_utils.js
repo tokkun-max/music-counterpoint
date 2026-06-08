@@ -110,6 +110,17 @@ function insertOrReplace(events, step, pitch, dur) {
   return result.sort((a, b) => a.step - b.step);
 }
 
+function insertShift(events, step, pitch, dur) {
+  // 挿入点以降の音符をまるごと dur ステップ右にシフトする（長さは変えない）
+  const result = events.map(ev =>
+    ev.step >= step
+      ? { ...ev, step: ev.step + dur }
+      : ev
+  );
+  result.push({ step, pitch, dur });
+  return result.sort((a, b) => a.step - b.step);
+}
+
 function removeEventAt(events, step) {
   return events.filter(ev => !(ev.step <= step && step < ev.step + ev.dur));
 }
