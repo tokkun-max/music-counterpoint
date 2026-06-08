@@ -487,11 +487,19 @@ function halveSel() {
   );
   if (!hasTarget) { setStatus("選択中の音符はすでに最小長さです。"); return; }
   pushUndo();
-  // setDur と同じく後続イベントを左シフトし、末尾を休符で埋める
-  for (const ev of [...evs].filter(ev => state.selSteps.has(ev.step))) {
-    const step = ev.step;
-    const pitch = ev.pitch;
-    const oldDur = ev.dur;
+  // 選択音符を step 昇順に処理。各音符の短縮後、後続を左シフトする。
+  // ループごとに配列を更新するが、処理済み音符は selSteps で管理した
+  // 元の step を基準にするため重複しない。
+  const targets = evs
+    .filter(ev => state.selSteps.has(ev.step) && DUR_ORDER.indexOf(ev.dur) > 0)
+    .sort((a, b) => a.step - b.step);
+  // 短縮による累積シフト量を追跡
+  let cumulativeShift = 0;
+  for (const target of targets) {
+    const step = target.step - cumulativeShift; // シフト後の実際の step
+    const cur = state.voices[state.selVoice].find(e => e.step === step);
+    if (!cur) continue;
+    const oldDur = cur.dur;
     const newDur = halvedDur(oldDur);
     if (newDur === oldDur) continue;
     const gap = oldDur - newDur;
@@ -501,16 +509,16 @@ function halveSel() {
         ? { ...e, step: e.step - gap }
         : e
       );
-    updated.push({ step, pitch, dur: newDur });
-    // 末尾の空きを休符で埋める
+    updated.push({ step, pitch: cur.pitch, dur: newDur });
     const lastEnd = updated.reduce((max, e) => Math.max(max, e.step + e.dur), 0);
     if (lastEnd < 64) updated.push({ step: lastEnd, pitch: "R", dur: 64 - lastEnd });
     updated.sort((a, b) => a.step - b.step);
     state.voices[state.selVoice] = updated;
-    // 選択状態を更新
-    state.selEv = findEventAt(state.voices[state.selVoice], step);
-    if (state.selEv) state.selSteps = new Set([state.selEv.step]);
+    cumulativeShift += gap;
   }
+  // 選択状態をリセット（位置がずれるため）
+  state.selEv = null;
+  state.selSteps = new Set();
   refreshVoice(state.selVoice);
   updateEditorInfo();
   setStatus("選択中の音符を半分の長さにしました。Ctrl+Z で元に戻せます。");
