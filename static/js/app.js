@@ -476,28 +476,41 @@ function undo() {
 
 function halveSel() {
   if (!state.selVoice || !state.selSteps.size) return;
-
-  // DUR_ORDER の1つ前の音価を返す（十六分音符=1 より短くはしない）
   function halvedDur(dur) {
     const idx = DUR_ORDER.indexOf(dur);
     if (idx <= 0) return dur;
     return DUR_ORDER[idx - 1];
   }
-
   const evs = state.voices[state.selVoice];
-
   const hasTarget = evs.some(ev =>
     state.selSteps.has(ev.step) && DUR_ORDER.indexOf(ev.dur) > 0
   );
   if (!hasTarget) { setStatus("選択中の音符はすでに最小長さです。"); return; }
-
   pushUndo();
-
-  for (const ev of evs) {
-    if (!state.selSteps.has(ev.step)) continue;
-    ev.dur = halvedDur(ev.dur);
+  // setDur と同じく後続イベントを左シフトし、末尾を休符で埋める
+  for (const ev of [...evs].filter(ev => state.selSteps.has(ev.step))) {
+    const step = ev.step;
+    const pitch = ev.pitch;
+    const oldDur = ev.dur;
+    const newDur = halvedDur(oldDur);
+    if (newDur === oldDur) continue;
+    const gap = oldDur - newDur;
+    const updated = state.voices[state.selVoice]
+      .filter(e => e.step !== step)
+      .map(e => e.step >= step + oldDur
+        ? { ...e, step: e.step - gap }
+        : e
+      );
+    updated.push({ step, pitch, dur: newDur });
+    // 末尾の空きを休符で埋める
+    const lastEnd = updated.reduce((max, e) => Math.max(max, e.step + e.dur), 0);
+    if (lastEnd < 64) updated.push({ step: lastEnd, pitch: "R", dur: 64 - lastEnd });
+    updated.sort((a, b) => a.step - b.step);
+    state.voices[state.selVoice] = updated;
+    // 選択状態を更新
+    state.selEv = findEventAt(state.voices[state.selVoice], step);
+    if (state.selEv) state.selSteps = new Set([state.selEv.step]);
   }
-
   refreshVoice(state.selVoice);
   updateEditorInfo();
   setStatus("選択中の音符を半分の長さにしました。Ctrl+Z で元に戻せます。");
